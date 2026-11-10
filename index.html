@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cortex — A world within</title>
+  <meta name="description" content="An interactive 3D atlas of the human brain. Explore brain regions, gyri, sulci, functional cortical systems, and common pathways with curated research papers.">
+  <meta name="theme-color" content="#f5f5ef">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%232d5148'/%3E%3Cpath d='M20 10c-8-4-13 10-6 12-2 8 6 10 6 3m0-15c8-4 13 10 6 12 2 8-6 10-6 3V10' fill='none' stroke='%23f0f0de' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./atlas.css"><link rel="stylesheet" href="./slices.css"><link rel="stylesheet" href="./cellular.css?v=6"><link rel="stylesheet" href="./scale-bar.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+<header class="header">
+ <a class="brand" href="./" aria-label="Cortex home"><span class="brand-mark" data-icon="brain"></span><span>cortex<span class="brand-dot">.</span></span><span class="brand-sub">THE INTERACTIVE BRAIN ATLAS</span></a>
+ <nav aria-label="Main navigation"><button class="nav-item active" id="explore-nav">Explore</button><button class="nav-item" id="research-nav">Research library <span class="tiny-count">59</span></button><button class="nav-item" id="saved-nav">Reading list <span id="saved-count"></span></button></nav>
+ <button class="tour-btn" id="tour-btn"><span data-icon="sparkles"></span> Guided tour <span data-icon="arrow-right"></span></button>
+</header>
+<div class="app-shell">
+ <aside class="sidebar" aria-label="Brain regions">
+  <div class="sidebar-title"><h2 id="sidebar-heading">Brain regions</h2><span class="count" id="item-count">13</span></div>
+  <p class="sidebar-intro">Every region has a story.</p>
+  <div class="atlas-layers" role="group" aria-label="Atlas layer"><button data-layer="regions" class="active">Regions</button><button data-layer="anatomy">Anatomy</button><button data-layer="functional">Function</button><button data-layer="pathways">Pathways</button><button data-layer="slices">Sections & MRI</button><button data-layer="cellular">Cellular <span>NEW</span></button></div>
+  <label class="search"><span data-icon="search"></span><input id="region-search" placeholder="Find a region or function…" aria-label="Search atlas items"><kbd>/</kbd></label>
+  <div class="region-filter" role="group" aria-label="Filter regions"><button data-filter="all" class="active">All regions</button><button data-filter="cortex">Cortical</button><button data-filter="deep">Deep</button></div>
+  <div id="region-list" class="region-list"></div>
+  <div class="sidebar-bottom"><div class="learning-note"><span class="note-orbit" data-icon="network"></span><div><strong>One connected system.</strong><p>Regions work together. No part<br>of the brain acts alone.</p></div></div><button id="about-btn" class="text-btn"><span data-icon="info"></span> About this atlas <span data-icon="arrow-up-right"></span></button></div>
+ </aside>
+ <main class="workspace" id="workspace">
+  <div class="stage-heading"><div class="eyebrow"><span class="green-dot"></span> EXPLORE THE HUMAN BRAIN</div><h1>A world within.</h1><p>Follow your curiosity. Discover what makes you, you.</p></div>
+  <div class="view-switch" role="group" aria-label="Brain view"><button class="active" data-view="surface"><span data-icon="layers"></span> Surface</button><button data-view="deep"><span data-icon="scan"></span> Deep structures</button></div>
+  <div class="anatomy-controls"><label>Hemisphere<select id="hemisphere" aria-label="Visible hemisphere"><option value="both">Both</option><option value="left">Left</option><option value="right">Right</option></select></label><label>View<select id="camera-preset" aria-label="Camera perspective"><option value="lateral">Lateral</option><option value="medial">Medial</option><option value="inferior">Inferior</option><option value="superior">Superior</option><option value="posterior">Posterior</option></select></label></div>
+  <div class="layer-note" id="layer-note">Regions work together as a connected system.</div>
+  <section id="slice-workspace" class="hidden" aria-label="MRI section viewer">
+   <div class="slice-toolbar"><div class="slice-plane-tabs" role="group" aria-label="Section plane"><button data-slice-plane="coronal" class="active">Coronal</button><button data-slice-plane="axial">Axial / horizontal</button><button data-slice-plane="sagittal">Sagittal</button></div><div class="slice-display-tabs" role="group" aria-label="Section display"><button data-slice-display="mri" class="active">MRI image</button><button data-slice-display="cut">3D cut</button></div></div>
+   <div class="mri-frame"><div class="mri-readout"><span id="slice-image-name">Coronal · T1-weighted template</span><span>fsaverage · 1 mm</span></div><div class="mri-field"><canvas id="mri-canvas" width="512" height="512" tabindex="0" aria-label="Brain MRI slice. Click to identify an anatomical label. Use arrow keys to move through slices."></canvas><b id="slice-orient-top" class="mri-orient top">S</b><b id="slice-orient-bottom" class="mri-orient bottom">I</b><b id="slice-orient-left" class="mri-orient left">R</b><b id="slice-orient-right" class="mri-orient right">L</b><div id="mri-scale-bar" class="scale-bar hidden" role="group" aria-label="MRI image scale"><i aria-hidden="true"></i><span></span></div></div><div id="slice-hover">Click the image to identify a structure.</div><div id="slice-loading"><span class="loading-ring"></span><p>Loading the MRI template…</p></div></div>
+   <div class="slice-cut-hint">Drag to rotate the section in 3D. The MRI plane and surface share the fsaverage coordinate frame.</div>
+   <div class="slice-control-panel"><div class="slice-position-heading"><span id="slice-coordinate">y = −12 mm</span><button id="slice-center">Reset level</button></div><div class="slice-slider-row"><button id="slice-prev" aria-label="Previous slice">−</button><input id="slice-position" type="range" min="-110" max="80" step="1" value="-12" aria-label="Slice position in millimeters"><button id="slice-next" aria-label="Next slice">+</button></div><div class="slice-slider-directions"><span id="slice-direction-low">Posterior</span><span id="slice-direction-high">Anterior</span></div><div id="slice-presets" class="slice-presets"></div><div class="slice-options"><button id="slice-overlay" class="active" aria-pressed="true">Color overlay</button><button id="slice-labels" class="active" aria-pressed="true">Labels</button><label>Contrast<input id="slice-contrast" type="range" min="0.65" max="1.5" step="0.05" value="1" aria-label="MRI display contrast"></label></div></div>
+  </section>
+  <section id="cellular-workspace" class="hidden" aria-label="Cellular neuroscience lab">
+   <header class="cell-heading">
+    <div class="eyebrow"><span class="green-dot"></span> BRAIN ATLAS / CELLULAR SCALE</div>
+    <h1>Inside a neuron.</h1>
+    <div class="cell-lessons" role="group" aria-label="Cellular lessons">
+     <button data-cell-lesson="spike" class="active" aria-pressed="true">Action potential</button>
+     <button data-cell-lesson="pump" aria-pressed="false">Na⁺/K⁺ ATPase</button>
+    </div>
+   </header>
+   <div class="cell-scale-toolbar">
+    <div class="cell-scales" role="group" aria-label="Model scale">
+     <button data-cell-scale="brain">Brain</button><button data-cell-scale="neuron">Neuron</button><button data-cell-scale="membrane">Membrane</button>
+    </div>
+    <button id="cell-zoom" title="Replay zoom from the brain to a neuron">Replay zoom ↗</button>
+   </div>
+   <div class="cell-model">
+    <div id="cell-membrane"></div>
+    <p id="cell-model-note"></p>
+   </div>
+   <div class="cell-controls">
+    <div class="cell-status"><span id="cell-phase-name">Resting potential</span><output id="cell-vm" aria-live="off" for="cell-time cell-stimulus">−65.0 mV</output></div>
+    <div class="cell-spike-controls">
+     <div id="cell-plot"></div>
+     <label class="cell-slider"><span>Trace time <output id="cell-time-label" aria-live="off" for="cell-time">0.0 ms</output></span><input id="cell-time" type="range" min="0" max="22" step=".04" value="0"></label>
+     <label class="cell-slider"><span>Stimulus (1 ms) <output id="cell-strength" for="cell-stimulus">14 µA/cm²</output></span><input id="cell-stimulus" type="range" min="0" max="24" step="1" value="14"></label>
+    </div>
+    <div id="cell-pump-steps" role="group" aria-label="Transport cycle steps"></div>
+    <div class="cell-actions">
+     <button id="cell-play" class="primary-button">Run stimulus</button><button id="cell-reset">Reset</button>
+     <div class="cell-presets"><button id="cell-weak">Weak stimulus</button><button id="cell-strong">Strong stimulus</button></div>
+    </div>
+   </div>
+  </section>
+  <div id="brain-stage" class="brain-stage" aria-label="Interactive 3D brain model. Drag to rotate, scroll to zoom, or use the region list."><div class="loading" id="loading"><span class="loading-ring"></span><p>Bringing the brain into focus…</p></div><canvas id="cell-zoom-frame" class="hidden" aria-hidden="true"></canvas><div id="scene-scale-bar" class="scale-bar hidden" role="group" aria-label="Scale at focus depth" title="Scale at the camera’s focus depth. Objects at other depths appear at different sizes."><i aria-hidden="true"></i><span></span></div><div id="labels" class="labels"></div><div class="hover-tooltip" id="hover-tooltip"></div></div>
+  <div class="orientation"><span>S</span><div><i></i><b>A</b><em>L</em></div><small id="orientation-caption">Left anterior view</small></div>
+  <div class="stage-meta"><span class="live-dot"></span><span id="model-caption">fsaverage5 cortical surface</span><span class="meta-separator">/</span><span>3D ATLAS</span></div>
+  <div class="stage-bottom"><div class="canvas-instruction"><span data-icon="mouse"></span> Drag to rotate <i>·</i> Scroll to zoom <i>·</i> Click to explore</div><div class="tools"><button id="labels-btn" class="active" aria-pressed="true" title="Toggle region labels"><span data-icon="tag"></span><span>Labels</span></button><span class="tool-divider"></span><button id="separate-btn" aria-pressed="false" title="Separate the hemispheres"><span data-icon="split"></span><span>Separate</span></button><button id="rotate-btn" aria-pressed="false" title="Auto rotate"><span data-icon="rotate"></span></button><span class="tool-divider"></span><button id="reset-btn" title="Reset view" aria-label="Reset view"><span data-icon="reset"></span></button><button id="fullscreen-btn" title="Expand model" aria-label="Expand model"><span data-icon="expand"></span></button></div><div class="zoom-tools"><button id="zoom-in" aria-label="Zoom in"><span data-icon="plus"></span></button><div></div><button id="zoom-out" aria-label="Zoom out"><span data-icon="minus"></span></button></div></div>
+  <div class="tour-card hidden" id="tour-card"></div>
+ </main>
+ <aside id="detail-panel" class="detail-panel" aria-label="Selected region information" aria-live="polite"></aside>
+</div>
+<footer class="footer"><span><span class="green-dot"></span> A little curiosity goes a long way.</span><span>Built for exploration. Grounded in science. <button id="sources-btn">Sources & methodology <span data-icon="arrow-up-right"></span></button></span></footer>
+<dialog id="modal"><div class="modal-inner"><div class="modal-header"><div id="modal-heading"></div><button id="close-modal" class="icon-button" aria-label="Close dialog"><span data-icon="x"></span></button></div><div id="modal-content"></div></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="./app.js?v=6"></script>
+</body></html>

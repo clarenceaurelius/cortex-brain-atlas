@@ -1,0 +1,8 @@
+MRI and segmentation: FreeSurfer fsaverage template, obtained from the MNE testing-data distribution.
+
+Repackaged from MGZ into byte arrays; original 1 mm grid and label values retained. Segmentation label numbers converted losslessly from float32 to uint8.
+These repackaged data and rendered views are modified derivatives, not original FreeSurfer files.
+
+All or portions of this licensed product (such portions are the "Software") have been obtained under license from The General Hospital Corporation "MGH" and are subject to the following terms and conditions:
+
+See FREESURFER-LICENSE.txt for all terms.

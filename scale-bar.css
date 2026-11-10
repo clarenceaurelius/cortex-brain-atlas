@@ -1,0 +1,27 @@
+.scale-bar {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: #f8faf1eb;
+  color: #385345;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.scale-bar i {
+  display: block;
+  width: var(--scale-width);
+  height: 8px;
+  border-inline: 1px solid;
+  background: linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat;
+}
+#scene-scale-bar { left: 24px; bottom: 8px; }
+body[data-layer="cellular"] #scene-scale-bar { left: auto; right: 15px; bottom: auto; top: 5px; }
+#mri-scale-bar { right: 6px; bottom: 6px; background: #101919df; color: #e1efdf; }
+#cell-zoom-frame { position: absolute; inset: 0; pointer-events: none; z-index: 1; }

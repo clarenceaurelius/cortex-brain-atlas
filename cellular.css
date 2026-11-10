@@ -1,0 +1,152 @@
+.atlas-layers button[data-layer="slices"] { grid-column: auto; }
+.atlas-layers button[data-layer="cellular"] span {
+  color: #54745e;
+  font-size: 6px;
+  letter-spacing: .08em;
+  border: 1px solid #cfdcc2;
+  border-radius: 3px;
+  padding: 2px 3px;
+}
+body[data-layer="cellular"] {
+  --accent: #6c8e77;
+  --cell-ink: #345648;
+  --cell-muted: #596e5b;
+  --cell-line: #dce5d7;
+  --cell-paper: #fcfdf7;
+}
+body[data-layer="cellular"] :is(.stage-heading, .view-switch, .anatomy-controls, .layer-note, .orientation, .stage-meta, .stage-bottom, .sidebar .search, .region-filter) { display: none; }
+body[data-layer="cellular"] .app-shell { min-height: 595px; }
+body[data-layer="cellular"] .brain-stage { inset: 158px 0 220px; }
+body[data-layer="cellular"] .workspace:has([data-lesson="pump"]) .brain-stage { bottom: 139px; }
+body[data-layer="cellular"][data-cellular-scale="membrane"] .brain-stage { display: none; }
+#cellular-workspace {
+  position: absolute;
+  inset: 25px clamp(14px, 4%, 39px) 17px;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto auto minmax(95px, 1fr) auto;
+  gap: 10px;
+  pointer-events: none;
+  color: var(--cell-ink);
+}
+.cell-heading h1 { margin: 5px 0 8px; font-size: clamp(24px, 3vw, 36px); }
+.cell-lessons, .cell-scales, .cell-scale-toolbar, .cell-actions, .cell-presets, .cell-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cell-lessons button, .cell-scale-toolbar, .cell-controls { pointer-events: auto; }
+.cell-lessons button, .cell-scales button, #cell-zoom, .cell-actions button, #cell-pump-steps button, .cell-research-button {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid var(--cell-line);
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--cell-muted);
+  background: var(--cell-paper);
+}
+.cell-lessons button.active, .cell-scales button.active, #cell-pump-steps button.active {
+  border-color: #8fa995;
+  background: #e9f0e7;
+  color: var(--cell-ink);
+  font-weight: 600;
+}
+.cell-scale-toolbar { justify-content: space-between; }
+#cell-zoom { white-space: nowrap; }
+.cell-model {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+#cell-model-note {
+  grid-row: 2;
+  color: var(--cell-muted);
+  background: #f7faf2e8;
+  font-size: 9px;
+  margin: 0;
+  text-align: center;
+  border-radius: 4px;
+  padding: 3px 7px;
+}
+#cell-membrane {
+  display: none;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 680px;
+}
+[data-scale="membrane"] #cell-membrane { display: block; }
+.membrane-diagram { width: 100%; height: 100%; overflow: visible; }
+.membrane-diagram text { fill: #426053; stroke: none; font-size: 12px; }
+.membrane-diagram .bilayer { fill: #cedbc7; stroke: #9bb49d; stroke-width: 1.2; }
+.membrane-diagram .pump-protein { fill: #cfd3e7; stroke: #817da8; stroke-width: 1.6; }
+.membrane-diagram .channel-na { fill: #c2e3db; stroke: #4c9e91; stroke-width: 1.5; }
+.membrane-diagram .channel-k { fill: #f0d6bc; stroke: #bd8759; stroke-width: 1.5; }
+.membrane-diagram .protein-label { fill: #384e46; font-size: 11px; font-weight: 700; }
+.membrane-diagram .sodium { color: #26766c; }
+.membrane-diagram .potassium { color: #a1673b; }
+.membrane-diagram .cell-ions circle { fill: var(--cell-paper); stroke: currentColor; stroke-width: 1.4; }
+.membrane-diagram .cell-ions text { fill: currentColor; font-size: 10px; font-weight: 700; }
+.membrane-diagram .transport-arrow { stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.membrane-diagram .sodium-current, .membrane-diagram .potassium-current { opacity: .14; transition: opacity .15s; }
+#cell-membrane[data-sodium="true"] .sodium-current, #cell-membrane[data-potassium="true"] .potassium-current { opacity: 1; }
+.membrane-diagram .pump-energy { fill: #605786; font-weight: 700; }
+.membrane-diagram .membrane-scale { fill: none; stroke: #527061; stroke-width: 1.5; }
+.membrane-diagram .pump-gate { fill: none; stroke: #817da8; stroke-width: 2; }
+.release-out { animation: release-out .55s ease-out both; }
+.release-in { animation: release-in .55s ease-out both; }
+@keyframes release-out { from { transform: translateY(43px); opacity: .4; } }
+@keyframes release-in { from { transform: translateY(-43px); opacity: .4; } }
+.cell-controls {
+  padding: 9px 13px;
+  border: 1px solid var(--cell-line);
+  border-radius: 9px;
+  background: var(--cell-paper);
+  box-shadow: 0 4px 20px #334a3510;
+}
+.cell-status { justify-content: space-between; font-size: 11px; font-weight: 700; }
+#cell-vm { font-variant-numeric: tabular-nums; color: #1b6a60; }
+#cell-plot { max-width: 640px; margin: 0 auto; }
+.voltage-chart { display: block; width: 100%; height: clamp(80px, 13vh, 121px); }
+.voltage-grid { fill: #5b6d5c; font-size: 11px; }
+.voltage-grid text { stroke: none; }
+.voltage-grid line { stroke: #dbe4d8; stroke-width: 1; }
+.voltage-line { fill: none; stroke: #2b7163; stroke-width: 2; stroke-linejoin: round; }
+.voltage-cursor { stroke: #698e82; stroke-width: 1.2; stroke-dasharray: 3 3; }
+.voltage-dot { fill: #257a6b; stroke: #f8fff9; stroke-width: 1.4; }
+.stimulus-mark { fill: none; stroke: #977447; stroke-width: 1.6; }
+.cell-slider { display: grid; grid-template-columns: minmax(149px, auto) 1fr; gap: 9px; align-items: center; color: var(--cell-muted); font-size: 10px; margin-top: 4px; }
+.cell-slider > span { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.cell-slider output { color: var(--cell-ink); font-variant-numeric: tabular-nums; }
+.cell-slider input { width: 100%; min-width: 0; height: 15px; margin: 0; accent-color: #628875; }
+.cell-actions { margin-top: 7px; }
+.cell-presets { margin-left: auto; }
+.cell-actions .primary-button { background: #456b50; color: #fff; border-color: #456b50; }
+#cell-pump-steps { display: none; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
+#cell-pump-steps button span { display: block; color: var(--cell-muted); font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+[data-lesson="pump"] :is(.cell-spike-controls, #cell-vm, .cell-presets) { display: none; }
+[data-lesson="pump"] #cell-pump-steps { display: grid; }
+body[data-layer="cellular"] .region-row:disabled { opacity: .5; cursor: default; }
+.cell-stage-number { min-width: 19px; color: #526f5b; font-size: 10px; font-variant-numeric: tabular-nums; }
+.cell-research-button { margin: 0 0 15px; }
+.cell-mechanisms, .cell-transport-summary, .cell-research-button { grid-column: 1 / -1; }
+.cell-mechanisms p { font-size: 10px; line-height: 1.65; margin: 0 0 8px; padding: 8px; background: #f1f5eb; color: var(--cell-muted); border-radius: 5px; }
+.cell-mechanisms strong { display: block; color: var(--cell-ink); margin-bottom: 3px; }
+.cell-transport-summary { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+.cell-transport-summary strong { font-size: 9px; font-weight: 600; color: var(--cell-ink); background: #eaf1e8; border-radius: 4px; padding: 4px 6px; }
+@media (max-width: 600px) {
+  .atlas-layers { display: grid; grid-template-columns: repeat(3, 1fr); }
+  body[data-layer="cellular"] .sidebar { order: 0; }
+  body[data-layer="cellular"] .region-list { padding-top: 0; }
+  body[data-layer="cellular"] .workspace { height: 635px; min-height: 635px; flex-shrink: 0; }
+  body[data-layer="cellular"] .brain-stage { top: 143px; }
+  #cellular-workspace { top: 15px; }
+  .cell-slider { min-height: 25px; }
+  .cell-actions button, .cell-scales button, #cell-zoom { min-height: 34px; padding-inline: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .release-out, .release-in { animation: none; }
+}
