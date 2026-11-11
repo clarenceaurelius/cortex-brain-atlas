@@ -55,9 +55,15 @@ function renderRegions(){
  if(layer==='slices'){sliceViewer.renderSidebar($('#region-search').value);return;}
  const query=$('#region-search').value.toLowerCase().trim();
  const groups=layerGroups[layer];
+ const includeLocusCoeruleus=layer==='regions'&&filter==='deep';
+ const filteredItems=currentItems().filter(r=>{
+  const matchesFilter=filter==='all'||r.group===filter||(includeLocusCoeruleus&&r.id==='locus-coeruleus');
+  const searchText=`${r.name} ${r.short} ${r.description} ${(r.functions||[]).flat().join(' ')} ${r.code||''}`.toLowerCase();
+  return matchesFilter&&(!query||searchText.includes(query));
+ });
  let found=0;
  $('#region-list').innerHTML=groups.map(([key,title])=>{
-  const group=currentItems().filter(r=>r.group===key&&(filter==='all'||r.group===filter)&&(!query||`${r.name} ${r.short} ${r.description} ${(r.functions||[]).flat().join(' ')} ${r.code||''}`.toLowerCase().includes(query)));
+  const group=filteredItems.filter(r=>r.group===key);
   found+=group.length;
   return group.length?`<div class="group-heading">${title}<span>${group.length}</span></div>`+group.map(r=>`<button class="region-row ${selected===r.id?'active':''}" data-region="${r.id}" style="--region-color:${r.color}" aria-pressed="${selected===r.id}"><span class="region-dot"></span><span><strong>${r.name}</strong><small>${r.short}</small></span>${icon('arrow-right')}</button>`).join(''):'';
  }).join('');
@@ -236,13 +242,15 @@ const routeAnimations=[];let traceStart=performance.now();
 function createLabels(){
  $('#labels').innerHTML='';labels.length=0;
  for(const r of currentItems()){
-  const el=document.createElement('button');el.className='model-label'+(r.layer==='functional'?' functional-label':'');el.dataset.region=r.id;el.style.setProperty('--region-color',r.color);el.innerHTML=(r.code||r.name)+icon('arrow-up-right');el.setAttribute('aria-label','Explore '+r.name);$('#labels').append(el);labels.push({el,region:r});
+  const label=r.layer==='functional'?(r.code||r.name):r.name;
+  const el=document.createElement('button');el.className='model-label'+(r.layer==='functional'?' functional-label':'');el.dataset.region=r.id;el.style.setProperty('--region-color',r.color);el.innerHTML=label+icon('arrow-up-right');el.setAttribute('aria-label','Explore '+r.name);$('#labels').append(el);labels.push({el,region:r});
  }
 }
 function updateMaterials(){
  if(mriPlaneMesh)mriPlaneMesh.visible=layer==='slices'&&sliceViewer.loaded&&sliceViewer.display==='cut';
  const displayLayer=layer==='cellular'?'regions':layer;
- const focusLC=layer==='regions'&&selected==='locus-coeruleus'&&view==='deep';
+ const deepRegionView=layer==='regions'&&view==='deep';
+ const focusLC=deepRegionView&&selected==='locus-coeruleus';
  const showLCProjection=layer==='pathways'&&selected==='path-locus-coeruleus';
  for(const m of meshes){
   if(layer==='slices'){const id=m.userData.region;const isContext=(m.userData.layer||'regions')==='regions'&&(!m.userData.schematic||['cerebellum','brainstem'].includes(id));m.visible=isContext;if(isContext){m.material.color.set('#bdc8b0');m.material.emissive.set('#000000');m.material.opacity=m.userData.schematic?.3:.85;m.material.transparent=true;m.material.depthWrite=false;m.material.clippingPlanes=[sliceClippingPlane];m.renderOrder=1;}continue;}
@@ -250,7 +258,7 @@ function updateMaterials(){
   const id=m.userData.region,r=region(id),ml=m.userData.layer||'regions';
   const visibleSide=!m.userData.hemisphere||hemisphere==='both'||hemisphere===m.userData.hemisphere;
   m.visible=visibleSide&&(ml===displayLayer||(ml==='regions'&&displayLayer!=='regions'));
-  if(id==='locus-coeruleus')m.visible=visibleSide&&(focusLC||showLCProjection);
+  if(id==='locus-coeruleus')m.visible=visibleSide&&(deepRegionView||showLCProjection);
   if(m.userData.routeColor&&id!==selected)m.visible=false;
   if(layer==='cellular'&&cellularViewer.scale!=='brain')m.visible=false;
   if(!m.visible)continue;
@@ -265,7 +273,8 @@ function updateMaterials(){
    if(id==='medial')opacity=displayLayer==='regions'?(layer!=='cellular'&&view==='deep'?.02:.5):.025;
    if(layer==='anatomy'&&view==='surface'&&!m.userData.schematic)opacity=.12;
    if(layer==='functional'&&m.userData.schematic)m.visible=false;
-   if(focusLC&&m.userData.schematic&&!active)opacity=id==='brainstem'?.28:.08;
+   if(deepRegionView&&id==='brainstem'&&!active)opacity=.28;
+   if(focusLC&&m.userData.schematic&&!active&&id!=='brainstem')opacity=.08;
    if(id==='locus-coeruleus'){
     color.set(r.color);
     opacity=1;
@@ -391,7 +400,7 @@ function updateSceneScale(){
 function updateLabels(){
  const w=stage.clientWidth,h=stage.clientHeight,deep=view==='deep';
  const visibleSurface=['frontal','parietal','temporal','occipital','cerebellum','brainstem'];
- const visibleDeep=['hippocampus','amygdala','thalamus','ganglia','hypothalamus'];
+ const visibleDeep=['hippocampus','amygdala','thalamus','ganglia','hypothalamus','locus-coeruleus'];
  const screenLabels=[];
  for(const item of labels){const {el,region:r}=item;const visible=labelsOn&&(layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));el.style.display=visible?'flex':'none';if(!visible)continue;
   const side=hemisphere==='right'?'right':'left';const position=r.positions?.[side]||r.position;if(!position){el.style.display='none';continue;}const point=new THREE.Vector3(...position);if((r.group==='cortex'||r.layer==='anatomy'||r.layer==='functional')&&hemisphere==='both'&&(separated||deep))point.x+=side==='left'?-.65:.65;
