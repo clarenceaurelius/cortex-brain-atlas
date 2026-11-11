@@ -6,7 +6,7 @@ import { imageToRAS, rasToScene, SCENE_MM_PER_UNIT } from './slice-data.js?v=6';
 import { CellularViewer, cellularPapers, cellularPaperIds } from './cellular-viewer.js?v=6';
 import { buildNeuron } from './cellular-model.js';
 import { renderScaleBar } from './scale-bar.js';
-import { anatomy, functional, pathways, extraPapers, layerGroups, layerNotes } from './atlas-data.js?v=7';
+import { anatomy, functional, pathways, extraPapers, layerGroups, layerNotes } from './atlas-data.js?v=9';
 Object.assign(papers,extraPapers,cellularPapers);
 const regions=[...broadRegions,...anatomy,...functional,...pathways];
 
@@ -58,7 +58,7 @@ function renderRegions(){
  const includeLocusCoeruleus=layer==='regions'&&filter==='deep';
  const filteredItems=currentItems().filter(r=>{
   const matchesFilter=filter==='all'||r.group===filter||(includeLocusCoeruleus&&r.id==='locus-coeruleus');
-  const searchText=`${r.name} ${r.short} ${r.description} ${(r.functions||[]).flat().join(' ')} ${r.code||''}`.toLowerCase();
+  const searchText=`${r.name} ${r.short} ${r.description} ${(r.functions||[]).flat().join(' ')} ${(r.overviewSections||[]).flat().join(' ')} ${r.code||''}`.toLowerCase();
   return matchesFilter&&(!query||searchText.includes(query));
  });
  let found=0;
@@ -169,9 +169,11 @@ function renderAtlasDetail(r){
  const note=r.modelNote||(anatomical?(r.schematic?'This cleft is indicated by a schematic curve.':'The highlighted surface follows an anatomical Destrieux parcel; it does not define a functional boundary.'):(path?layerNotes.pathways:layerNotes.functional));
  const location=anatomical?'Destrieux a2009s · both hemispheres':path?'Illustrative route · not diffusion MRI':(r.hemis?.length===1?'Typically left hemisphere':'Bilateral territories')+' · approximate marker';
  const related=(r.connections||[]).filter(id=>region(id));
+ const overviewSections=(r.overviewSections||[]).map(([title,body])=>
+  `<h3 class="section-title">${htmlEscape(title)}</h3><p class="description">${htmlEscape(body)}</p>`).join('');
  const projectionLegend=r.legend?`<ul class="projection-legend">${r.legend.map(([label,color])=>`<li><i style="background:${color}"></i>${label}</li>`).join('')}</ul>`:'';
  const pathwayReference=r.source?`<a class="anatomy-source" href="${r.source}" target="_blank" rel="noopener noreferrer">Pathway anatomy reference ${icon('arrow-up-right')}</a>`:'';
- $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>${path?'PATHWAY':anatomical?'ANATOMY':'FUNCTION'} IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${kind}</div><h2 class="detailed-name">${r.name}</h2><p class="region-tagline">${r.short}</p></div><div class="detail-tabs" role="tablist" aria-label="Atlas details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='research'?r.papers.map(paperCard).join('')+pathwayReference:`<p class="description">${r.description}</p><div class="location">${icon('pin')}<span>${location}</span></div>${path?`<h3 class="section-title">${r.branches?'PROJECTION TARGETS':r.bidirectional?'SIMPLIFIED ROUTE · BIDIRECTIONAL':'SIMPLIFIED ROUTE · DIRECTION OF FLOW'}</h3>${projectionLegend}<ol class="pathway-steps">${r.steps.map((step,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><p>${step}</p></li>`).join('')}</ol><button class="primary-button" id="trace-path">${icon('activity')} Trace this pathway</button>`:''}<p class="model-note">${note}</p>${!anatomical&&!path?'<p class="model-note">Numbering is system-dependent. A1/A2 and M1/premotor/SMA are not equivalent stages of a common universal hierarchy. FFA and VWFA require functional localizers; their boundaries vary between people.</p>':''}${related.length?`<div class="connections-section"><h3 class="section-title">EXPLORE RELATED STRUCTURES</h3><div class="connected">${related.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div>`:''}<div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">${r.papers.length} references ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}${pathwayReference}</div>`}<div class="detail-navigator"><span>${currentItems().findIndex(x=>x.id===r.id)+1} / ${currentItems().length} ITEMS</span><button id="next-region">Next ${icon('arrow-right')}</button></div></div>`;
+ $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>${path?'PATHWAY':anatomical?'ANATOMY':'FUNCTION'} IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${kind}</div><h2 class="detailed-name">${r.name}</h2><p class="region-tagline">${r.short}</p></div><div class="detail-tabs" role="tablist" aria-label="Atlas details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='research'?r.papers.map(paperCard).join('')+pathwayReference:`<p class="description">${r.description}</p><div class="location">${icon('pin')}<span>${location}</span></div>${overviewSections}${path?`<h3 class="section-title">${r.branches?'PROJECTION TARGETS':r.bidirectional?'SIMPLIFIED ROUTE · BIDIRECTIONAL':'SIMPLIFIED ROUTE · DIRECTION OF FLOW'}</h3>${projectionLegend}<ol class="pathway-steps">${r.steps.map((step,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><p>${step}</p></li>`).join('')}</ol><button class="primary-button" id="trace-path">${icon('activity')} Trace this pathway</button>`:''}<p class="model-note">${note}</p>${!anatomical&&!path&&!r.overviewSections?'<p class="model-note">Numbering is system-dependent. A1/A2 and M1/premotor/SMA are not equivalent stages of a common universal hierarchy. FFA and VWFA require functional localizers; their boundaries vary between people.</p>':''}${related.length?`<div class="connections-section"><h3 class="section-title">EXPLORE RELATED STRUCTURES</h3><div class="connected">${related.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div>`:''}<div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">${r.papers.length} references ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}${pathwayReference}</div>`}<div class="detail-navigator"><span>${currentItems().findIndex(x=>x.id===r.id)+1} / ${currentItems().length} ITEMS</span><button id="next-region">Next ${icon('arrow-right')}</button></div></div>`;
 }
 
 function showModal(title,subtitle,content){
@@ -243,7 +245,12 @@ function createLabels(){
  $('#labels').innerHTML='';labels.length=0;
  for(const r of currentItems()){
   const label=r.layer==='functional'?(r.code||r.name):r.name;
-  const el=document.createElement('button');el.className='model-label'+(r.layer==='functional'?' functional-label':'');el.dataset.region=r.id;el.style.setProperty('--region-color',r.color);el.innerHTML=label+icon('arrow-up-right');el.setAttribute('aria-label','Explore '+r.name);$('#labels').append(el);labels.push({el,region:r});
+  const el=document.createElement('button');el.className='model-label'+(r.layer==='functional'?' functional-label':'');el.dataset.region=r.id;el.style.setProperty('--region-color',r.color);el.innerHTML=label+icon('arrow-up-right');el.setAttribute('aria-label','Explore '+r.name);
+  if(r.id==='locus-coeruleus'){
+   el.classList.add('locus-marker');
+   el.innerHTML=`<span class="locus-marker-label">${r.name}</span>`;
+  }
+  $('#labels').append(el);labels.push({el,region:r});
  }
 }
 function updateMaterials(){
@@ -268,7 +275,11 @@ function updateMaterials(){
   let opacity=1;
   if(ml==='regions'){
    if(displayLayer!=='regions'){color.set('#d4d8cc');opacity=m.userData.schematic?.12:(layer==='functional'?.32:layer==='pathways'?.09:.16);}
-   else if(layer!=='cellular'&&view==='deep'&&!m.userData.schematic&&!active)opacity=.105;
+   else if(layer!=='cellular'&&view==='deep'&&!m.userData.schematic){
+    // Keep the lobe selection visible without obscuring the internal markers.
+    if(!active)opacity=.105;
+    else if(deepRegionView&&!['insula','cingulate'].includes(id))opacity=.16;
+   }
    else if(r&&!active)color.lerp(new THREE.Color('#dddcd0'),.12);
    if(id==='medial')opacity=displayLayer==='regions'?(layer!=='cellular'&&view==='deep'?.02:.5):.025;
    if(layer==='anatomy'&&view==='surface'&&!m.userData.schematic)opacity=.12;
@@ -400,12 +411,26 @@ function updateSceneScale(){
 function updateLabels(){
  const w=stage.clientWidth,h=stage.clientHeight,deep=view==='deep';
  const visibleSurface=['frontal','parietal','temporal','occipital','cerebellum','brainstem'];
- const visibleDeep=['hippocampus','amygdala','thalamus','ganglia','hypothalamus','locus-coeruleus'];
+ const visibleDeep=['hippocampus','amygdala','thalamus','ganglia','hypothalamus'];
  const screenLabels=[];
- for(const item of labels){const {el,region:r}=item;const visible=labelsOn&&(layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));el.style.display=visible?'flex':'none';if(!visible)continue;
+ for(const item of labels){
+  const {el,region:r}=item;
+  const locusMarker=r.id==='locus-coeruleus';
+  const visible=locusMarker?layer==='regions'&&deep:labelsOn&&(layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
+  el.style.display=visible?'flex':'none';if(!visible)continue;
   const side=hemisphere==='right'?'right':'left';const position=r.positions?.[side]||r.position;if(!position){el.style.display='none';continue;}const point=new THREE.Vector3(...position);if((r.group==='cortex'||r.layer==='anatomy'||r.layer==='functional')&&hemisphere==='both'&&(separated||deep))point.x+=side==='left'?-.65:.65;
   point.project(camera);
-  const x=(point.x*.5+.5)*w,y=(-point.y*.5+.5)*h;let ox=0,oy=-23;
+  const x=(point.x*.5+.5)*w,y=(-point.y*.5+.5)*h;
+  if(locusMarker){
+   // Keep the clickable area centered on the nucleus, above the rendered meshes.
+   const inView=x>=0&&x<=w&&y>=0&&y<=h&&point.z>=-1&&point.z<=1;
+   el.style.display=inView?'flex':'none';
+   el.style.left=x+'px';el.style.top=y+'px';
+   el.classList.toggle('locus-marker-left',x>w/2);
+   el.classList.toggle('locus-marker-icon-only',!labelsOn);
+   continue;
+  }
+  let ox=0,oy=-23;
   if(r.id==='frontal'){ox=-35;oy=-45;}if(r.id==='parietal'){ox=14;oy=-45;}if(r.id==='temporal'){ox=-48;oy=30;}if(r.id==='occipital'){ox=55;oy=-10;}if(r.id==='cerebellum'){ox=45;oy=35;}if(r.id==='brainstem'){ox=-50;oy=42;}
   if(deep&&layer==='regions'){const offsets={hippocampus:[-88,35],amygdala:[-85,12],thalamus:[25,-55],ganglia:[-75,-70],hypothalamus:[65,15],insula:[-130,-20],cingulate:[20,-70]};[ox,oy]=offsets[r.id]||[ox,oy];}
   let px=THREE.MathUtils.clamp(x+ox,65,w-65),py=THREE.MathUtils.clamp(y+oy,85,h-53);
