@@ -1,3 +1,5 @@
+import { locusCoeruleusPositions } from './data.js?v=7';
+
 // Anatomical parcels follow Destrieux a2009s. Functional markers and tract
 // curves are explicitly schematic teaching aids, not measured localizers.
 export const extraPapers = {
@@ -441,6 +443,24 @@ export const functional=[
 ];
 
 const p=(id,name,group,color,description,steps,points,papers,connections,source,extra={})=>({id:'path-'+id,name,short:group,group,layer:'pathways',color,description,steps,points,papers,connections,source,schematic:true,position:points[Math.floor(points.length/2)],...extra});
+const lcOrigin = locusCoeruleusPositions.left;
+const lcAscending = '#c45d54';
+const lcHindbrain = '#3c8a64';
+const lcMidbrain = [-.24,-.48,-.22];
+const lcForebrain = [-.45,.06,.32];
+// One representative side. The curves show targets from the reference figure.
+const lcBranches = [
+ {color:lcAscending,points:[lcOrigin,lcMidbrain,lcForebrain,[-.56,.35,1.28],[-.64,.55,1.62]]},
+ {color:lcAscending,points:[lcOrigin,lcMidbrain,lcForebrain,[-.65,.63,.39],[-.78,1.06,.15]]},
+ {color:lcAscending,points:[lcOrigin,lcMidbrain,lcForebrain,[-.69,.62,.16],[-.80,1.02,-.36]]},
+ {color:lcAscending,points:[lcOrigin,lcMidbrain,[-.26,-.30,-.16],[-.25,-.05,-.15]]},
+ {color:lcAscending,points:[lcOrigin,lcMidbrain,[-.15,-.53,-.02],[0,-.48,.12]]},
+ {color:lcAscending,points:[lcOrigin,[-.27,-.69,-.24],[-.43,-.64,-.29],[-.55,-.65,-.35]]},
+ {color:lcAscending,points:[lcOrigin,[-.30,-.67,-.04],[-.48,-.59,.19],[-.58,-.60,.50]]},
+ {color:lcHindbrain,points:[lcOrigin,[-.27,-.92,-.58],[-.38,-1.03,-.98],[-.48,-1.26,-1.52]]},
+ {color:lcHindbrain,points:[lcOrigin,[-.14,-1.24,-.22],[-.13,-1.68,-.12],[-.10,-2.20,-.05]]},
+];
+
 export const pathways=[
  p('optic','Retina → LGN → V1','sensory','#c7a15a','The principal retinogeniculate visual route. Nasal retinal fibers cross at the optic chiasm; temporal retinal fibers remain on the same side. Each hemisphere mainly receives information from the opposite visual hemifield.',['Retina → optic nerve','Optic chiasm: partial crossing','Optic tract → lateral geniculate nucleus','Optic radiations → V1'],[[-.65,-.68,1.7],[-.4,-.65,.7],[0,-.58,.33],[-.35,-.18,-.25],[-.8,-.3,-1.3],[-.18,.1,-1.7]],['thalamus','retinotopy'],['fn-v1','thalamus'],'https://www.ncbi.nlm.nih.gov/books/NBK553189/'),
  p('dorsal','Dorsal visual stream','visual','#7da8a2','A family of occipitoparietal pathways supporting spatial processing and visually guided action. The “where/how” shorthand is useful but does not imply an isolated serial channel.',['V1 / early visual areas','Dorsal extrastriate territories, including motion-sensitive cortex','Posterior parietal cortex','Interactions with premotor and motor networks'],[[-.2,.1,-1.7],[-.95,.15,-1.3],[-1.05,.7,-.6],[-.8,1,.1]],['vision','visualmaps'],['fn-mt','fn-ppc','fn-pmd'],null),
@@ -452,12 +472,24 @@ export const pathways=[
  p('arcuate','Dorsal language / arcuate system','language','#aa95bd','Perisylvian white matter connections link temporal, parietal, and frontal language-related territories. This teaching route summarizes a complex system with direct and indirect segments, not a single speech cable.',['Posterior temporal language territories','Dorsal perisylvian / inferior parietal connections','Inferior frontal and premotor language territories'],[[-1.05,-.15,-.55],[-.95,.45,-.55],[-.9,.7,.05],[-1,.25,.7]],['arcuate','languageTracts','speech'],['fn-wernicke','fn-broca','anat-26'],null,{bidirectional:true}),
  p('ventral-language','Ventral language pathways','language','#b7a06e','Multiple ventral temporal–frontal routes contribute to linking speech signals with meaning. Depending on the model, these include extreme-capsule pathways and other tracts; the curve does not identify one unique bundle.',['Temporal auditory / language networks','Ventral temporal–frontal association routes','Inferior frontal and semantic networks'],[[-1,-.2,-.4],[-.7,-.4,.1],[-.65,-.15,.75],[-.95,.2,.9]],['languageTracts','speech'],['fn-aassoc','fn-broca','fn-vwfa'],null,{bidirectional:true}),
  p('callosal','Corpus callosum / commissural fibers','commissural','#91a88c','The corpus callosum contains many fiber systems connecting cortical territories across hemispheres. The displayed arch illustrates interhemispheric communication rather than the anatomy of all callosal segments.',['Left cortical territory','Callosal white matter crossing the midline','Right cortical territory'],[[-1,.5,.1],[-.55,.4,.05],[0,.35,.05],[.55,.4,.05],[1,.5,.1]],['callosum'],['anat-longitudinal','frontal'],null,{bidirectional:true}),
+ p('locus-coeruleus','Locus coeruleus projections','neuromodulatory',lcAscending,
+  'Norepinephrine from the locus coeruleus reaches widely distributed targets. These representative branches show how a small brainstem nucleus can influence cortical and subcortical activity.',
+  ['Locus coeruleus in the dorsal pons is the origin of the branches.',
+   'Ascending projections reach prefrontal, motor and somatosensory cortices, thalamus, hypothalamus, hippocampus and amygdala.',
+   'Other projections reach cerebellum, medulla and spinal cord.'],
+  lcBranches[0].points,['locusCoeruleusParkinson','locusCoeruleusCognition','locusCoeruleusMapping'],
+  ['locus-coeruleus','frontal','fn-m1','fn-s1','thalamus','hypothalamus','hippocampus','amygdala','cerebellum','brainstem'],
+  'https://doi.org/10.1016/j.neurop.2026.100220',
+  {branches:lcBranches,camera:'lateral',position:lcOrigin,
+   legend:[['Ascending projections',lcAscending],['Cerebellum, medulla & spinal cord',lcHindbrain]],
+   modelNote:'This schematic shows selected targets on one side. The curves summarize the paper’s projection diagram.'}),
+
 ];
 
 export const layerGroups={
  regions:[['cortex','CEREBRAL CORTEX'],['hindbrain','CEREBELLUM & BRAINSTEM'],['deep','DEEP STRUCTURES']],
  anatomy:[['fissures','FISSURES'],['gyri','GYRI & CORTICAL FOLDS'],['sulci','SULCI & GROOVES']],
  functional:[['visual','VISUAL · Vs'],['auditory','AUDITORY · As'],['motor','MOTOR · Ms'],['sensory','SOMATOSENSORY · Ss'],['association','SPECIALIZED & ASSOCIATION']],
- pathways:[['visual','VISUAL STREAMS'],['sensory','ASCENDING SENSORY'],['motor','DESCENDING MOTOR'],['language','LANGUAGE CONNECTIONS'],['commissural','BETWEEN HEMISPHERES']],
+ pathways:[['visual','VISUAL STREAMS'],['sensory','ASCENDING SENSORY'],['motor','DESCENDING MOTOR'],['language','LANGUAGE CONNECTIONS'],['commissural','BETWEEN HEMISPHERES'],['neuromodulatory','NEUROMODULATORY']],
 };
 export const layerNotes={regions:'Regions work together as a connected system.',anatomy:'Destrieux anatomical parcels · both hemispheres.',functional:'Approximate teaching locations, not measured functional boundaries. This guide covers major systems, not every cortical field.',pathways:'Schematic routes · curves are not measured fiber tracts. Arrows indicate a simplified direction of flow.'};
