@@ -31,3 +31,14 @@
   font-weight: 700;
 }
 .model-label.locus-label::before { display: none; }
+
+.inline-citations {
+  color: #4d6355;
+  font-size: .9em;
+}
+.inline-citations a {
+  color: #315f50;
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+.inline-citations a:hover { color: #163e31; }

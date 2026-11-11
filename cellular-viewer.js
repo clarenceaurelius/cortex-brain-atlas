@@ -128,10 +128,11 @@ function membraneDiagram(lesson, pumpStep) {
 }
 
 export class CellularViewer {
-  constructor({ onScale, onSignal, paperCard }) {
+  constructor({ onScale, onSignal, paperCard, cite }) {
     this.onScale = onScale;
     this.onSignal = onSignal;
     this.paperCard = paperCard;
+    this.cite = cite;
     this.root = $('#cellular-workspace');
     this.active = false;
     this.lesson = 'spike';
@@ -283,25 +284,33 @@ export class CellularViewer {
   }
 
   renderDetail() {
+    const cite = this.cite;
     const pump = this.lesson === 'pump';
     const item = (pump ? pumpStages : spikeStages)[this.phase];
     const subthreshold = !pump && !this.trace.fired && this.phase > 0;
     const name = subthreshold ? 'Graded response' : item.name;
     const description = subthreshold ? 'This stimulus produces a small depolarisation followed by a return toward rest. Increase stimulus strength to explore the regenerative spike.' : item.description;
     const refs = cellularPaperIds[this.lesson];
+    const phaseRefs = pump ? ['pumpMechanism','pumpReview']
+      : this.phase === 0 ? ['membraneRest','membraneChannels']
+      : this.phase === 3 || this.phase === 4 ? ['membraneChannels','refractory']
+      : ['hodgkinHuxley','membraneChannels'];
     const readingLink = pump
       ? '<a class="anatomy-source" href="https://www.ncbi.nlm.nih.gov/books/NBK537088/" target="_blank" rel="noopener noreferrer">Pump physiology ↗</a>'
       : '<a class="anatomy-source" href="https://www.ncbi.nlm.nih.gov/books/NBK11146/" target="_blank" rel="noopener noreferrer">Refractory periods ↗</a>';
     const mechanisms = pump
       ? `<div class="cell-transport-summary"><strong>3 Na⁺ out</strong><strong>2 K⁺ in</strong><strong>1 ATP used</strong></div>
-         <p class="model-note">Each cycle moves one net positive charge outward. Over time, the pump maintains the Na⁺ and K⁺ gradients that make electrical signalling possible.</p>`
+         <p class="model-note">Each cycle moves one net positive charge outward. Over time, the pump maintains the Na⁺ and K⁺ gradients that make electrical signalling possible.${cite('pumpReview','pumpMechanism')}</p>`
       : `<div class="cell-mechanisms">
-           <p><strong>Voltage-gated Na⁺</strong>${subthreshold ? 'The stimulus produces too little inward current for a regenerative rise.' : item.sodium}</p>
-           <p><strong>Voltage-gated K⁺</strong>${subthreshold ? 'Resting and voltage-sensitive currents bring the voltage back toward baseline.' : item.potassium}</p>
-           <p><strong>Na⁺/K⁺ ATPase</strong>Maintains the gradients during and between spikes. Rapid voltage changes follow the channel currents.</p>
+           <p><strong>Voltage-gated Na⁺</strong>${subthreshold ? 'The stimulus produces too little inward current for a regenerative rise.' : item.sodium}${cite(...phaseRefs)}</p>
+           <p><strong>Voltage-gated K⁺</strong>${subthreshold ? 'Resting and voltage-sensitive currents bring the voltage back toward baseline.' : item.potassium}${cite(...phaseRefs)}</p>
+           <p><strong>Na⁺/K⁺ ATPase</strong>Maintains the gradients during and between spikes. Rapid voltage changes follow the channel currents.${cite('pumpReview','membraneChannels')}</p>
          </div>
-         <p class="model-note">This classical squid axon simulation holds ion gradients constant and combines resting leak currents into one term. The neuron and membrane are schematic. Channel properties and resting voltages vary across cell types.</p>`;
-    const body = this.reading ? refs.map(this.paperCard).join('') + readingLink : `<p class="description">${description}</p>${mechanisms}`;
+         <p class="model-note">This classical squid axon simulation holds ion gradients constant and combines resting leak currents into one term. The neuron and membrane are schematic. Channel properties and resting voltages vary across cell types.${cite('hodgkinHuxley','membraneRest')}</p>`;
+    const membraneNote = this.scale === 'membrane'
+      ? `<p class="model-note">The bracket indicates the approximate lipid bilayer thickness.${cite('bilayer')}</p>`
+      : '';
+    const body = this.reading ? refs.map(this.paperCard).join('') + readingLink : `<p class="description">${description}${cite(...phaseRefs)}</p>${mechanisms}${membraneNote}`;
     $('#detail-panel').innerHTML = `
       <div class="detail-top">
         <div class="detail-eyebrow">${pump ? 'TRANSPORT CYCLE' : 'MEMBRANE VOLTAGE'}</div>
