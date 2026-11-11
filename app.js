@@ -246,10 +246,7 @@ function createLabels(){
  for(const r of currentItems()){
   const label=r.layer==='functional'?(r.code||r.name):r.name;
   const el=document.createElement('button');el.className='model-label'+(r.layer==='functional'?' functional-label':'');el.dataset.region=r.id;el.style.setProperty('--region-color',r.color);el.innerHTML=label+icon('arrow-up-right');el.setAttribute('aria-label','Explore '+r.name);
-  if(r.id==='locus-coeruleus'){
-   el.classList.add('locus-marker');
-   el.innerHTML=`<span class="locus-marker-label">${r.name}</span>`;
-  }
+  if(r.id==='locus-coeruleus')el.classList.add('locus-label');
   $('#labels').append(el);labels.push({el,region:r});
  }
 }
@@ -411,26 +408,16 @@ function updateSceneScale(){
 function updateLabels(){
  const w=stage.clientWidth,h=stage.clientHeight,deep=view==='deep';
  const visibleSurface=['frontal','parietal','temporal','occipital','cerebellum','brainstem'];
- const visibleDeep=['hippocampus','amygdala','thalamus','ganglia','hypothalamus'];
+ const visibleDeep=['hippocampus','amygdala','thalamus','ganglia','hypothalamus','locus-coeruleus'];
  const screenLabels=[];
  for(const item of labels){
   const {el,region:r}=item;
-  const locusMarker=r.id==='locus-coeruleus';
-  const visible=locusMarker?layer==='regions'&&deep:labelsOn&&(layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
+  const visible=labelsOn&&(layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
   el.style.display=visible?'flex':'none';if(!visible)continue;
   const side=hemisphere==='right'?'right':'left';const position=r.positions?.[side]||r.position;if(!position){el.style.display='none';continue;}const point=new THREE.Vector3(...position);if((r.group==='cortex'||r.layer==='anatomy'||r.layer==='functional')&&hemisphere==='both'&&(separated||deep))point.x+=side==='left'?-.65:.65;
   point.project(camera);
   const x=(point.x*.5+.5)*w,y=(-point.y*.5+.5)*h;
-  if(locusMarker){
-   // Keep the clickable area centered on the nucleus, above the rendered meshes.
-   const inView=x>=0&&x<=w&&y>=0&&y<=h&&point.z>=-1&&point.z<=1;
-   el.style.display=inView?'flex':'none';
-   el.style.left=x+'px';el.style.top=y+'px';
-   el.classList.toggle('locus-marker-left',x>w/2);
-   el.classList.toggle('locus-marker-icon-only',!labelsOn);
-   continue;
-  }
-  let ox=0,oy=-23;
+  let ox=0,oy=r.id==='locus-coeruleus'?-32:-23;
   if(r.id==='frontal'){ox=-35;oy=-45;}if(r.id==='parietal'){ox=14;oy=-45;}if(r.id==='temporal'){ox=-48;oy=30;}if(r.id==='occipital'){ox=55;oy=-10;}if(r.id==='cerebellum'){ox=45;oy=35;}if(r.id==='brainstem'){ox=-50;oy=42;}
   if(deep&&layer==='regions'){const offsets={hippocampus:[-88,35],amygdala:[-85,12],thalamus:[25,-55],ganglia:[-75,-70],hypothalamus:[65,15],insula:[-130,-20],cingulate:[20,-70]};[ox,oy]=offsets[r.id]||[ox,oy];}
   let px=THREE.MathUtils.clamp(x+ox,65,w-65),py=THREE.MathUtils.clamp(y+oy,85,h-53);

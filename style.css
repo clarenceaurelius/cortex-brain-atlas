@@ -23,42 +23,11 @@
   .random-label { display: none; }
 }
 
-.model-label.locus-marker {
+.model-label.locus-label {
   z-index: 5;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-.model-label.locus-marker::before {
-  box-sizing: border-box;
-  width: 18px;
-  height: 18px;
-  border: 2px solid white;
-  background: #1671a4;
-  box-shadow: 0 0 0 4px #1671a445, 0 1px 5px #12324a65;
-}
-.model-label.locus-marker::after { display: none; }
-.model-label.locus-marker:is(:hover, :focus-visible, .active)::before {
-  box-shadow: 0 0 0 5px #1671a475, 0 1px 5px #12324a65;
-}
-.locus-marker-label {
-  position: absolute;
-  left: 38px;
-  top: 30px;
-  border: 1px solid #649ec9;
-  border-radius: 6px;
-  padding: 6px 8px;
+  border-color: #649ec9;
   background: #eff7fe;
   color: #184b6c;
-  font-size: 10px;
   font-weight: 700;
 }
-.locus-marker-left .locus-marker-label { left: auto; right: 38px; }
-.locus-marker-icon-only .locus-marker-label { display: none; }
+.model-label.locus-label::before { display: none; }
