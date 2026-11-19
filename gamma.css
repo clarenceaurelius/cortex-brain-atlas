@@ -1,0 +1,78 @@
+.gamma-launch { display: none; }
+body[data-species="mouse"] .gamma-launch {
+ display: flex;
+ flex-direction: column;
+ align-items: flex-start;
+ gap: 5px;
+ padding: 12px;
+ margin-bottom: 16px;
+ text-align: left;
+ border: 1px solid #d6dfcb;
+ border-radius: 8px;
+ background: #edf2e7;
+ color: #36543f;
+}
+.gamma-launch strong { font-size: 14px; }
+.gamma-launch span { font-size: 12px; color: #607559; }
+.gamma-region-link { padding: 10px 14px; margin: 0 0 18px; font-size: 14px; }
+.gamma-tabs,.gamma-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.gamma-tabs { padding: 0 24px 16px; border-bottom: 1px solid #dfe5da; }
+.gamma-tabs button,.gamma-options button,.gamma-locate button {
+ border: 1px solid #d6dfd0;
+ border-radius: 6px;
+ padding: 8px 10px;
+ color: #4c644f;
+ font-size: 14px;
+ background: #f8faf5;
+}
+.gamma-tabs .active,.gamma-options .active { background: #315c4d; color: #fff; border-color: #315c4d; }
+.gamma-detail-body>h3 { margin: 0 0 10px; font-size: 20px; }
+.gamma-detail-body .description { margin-bottom: 16px; }
+.gamma-help { font-size: 14px; line-height: 1.6; color: #53654e; }
+.gamma-options { margin-bottom: 14px; }
+.gamma-note { font-size: 13px; line-height: 1.6; color: #667261; }
+.gamma-locate { display: flex; gap: 8px; margin: 18px 0; }
+.gamma-layer-diagram { display: flex; align-items: center; gap: 22px; margin: 24px 0 12px; }
+.gamma-thalamus { border: 2px solid #a0b189; border-radius: 50%; padding: 18px 12px; color: #506b40; font-size: 15px; transition: background .08s; }
+.gamma-thalamus.active { background: #d6dea4; }
+.gamma-inputs { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.gamma-trn { max-width: 75px; padding-bottom: 9px; border-bottom: 3px solid #9e788f; text-align: center; color: #79536c; font-size: 13px; }
+.gamma-cue { display: inline-flex; align-items: center; gap: 8px; }
+.gamma-cue svg { width: 30px; height: 24px; }
+.gamma-cortex { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.gamma-cortex>span { margin-bottom: 5px; font-size: 13px; color: #69715f; }
+.gamma-cortex>div { padding: 11px 14px; border: 1px solid #d8dfd1; border-radius: 4px; background: #f1f4eb; font-size: 14px; transition: background .08s; }
+.gamma-cortex>div.active { background: #ecd4a1; border-color: #c8a66a; color: #664818; }
+.gamma-paper { margin-top: 20px; }
+.gamma-paper summary { cursor: pointer; font-size: 14px; color: #375840; padding: 10px 0; }
+#gamma-timeline { position: absolute; z-index: 4; bottom: 85px; left: 24px; right: 24px; padding: 14px 16px; border: 1px solid #d9e0d4; border-radius: 12px; background: #fcfdf9f5; box-shadow: 0 4px 24px #2b482a09; }
+.gamma-trace-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; font-size: 14px; }
+.gamma-trace-heading span { font-size: 12px; color: #67725f; }
+.gamma-trace { position: relative; margin: 5px 0; }
+.gamma-trace svg { display: block; width: 100%; overflow: visible; }
+.gamma-trace text { font: 15px 'DM Sans',sans-serif; fill: #64705e; }
+.gamma-event { position: absolute; top: 74%; width: 10px; height: 17px; margin-left: -5px; padding: 0; background: #c9964c; border: 2px solid #fcfdf9; border-radius: 4px; }
+.gamma-event:hover,.gamma-event.active { background: #865420; transform: scale(1.2); }
+.gamma-event:focus-visible { outline: 2px solid #315c4d; outline-offset: 3px; }
+.gamma-time-controls { display: flex; align-items: center; gap: 12px; margin-top: 5px; }
+.gamma-time-controls input { min-width: 0; flex: 1; accent-color: #55754c; }
+.gamma-time-controls button { padding: 7px 10px; border: 1px solid #d4decc; border-radius: 5px; font-size: 14px; white-space: nowrap; }
+.gamma-time-controls output { font-size: 13px; color: #57694e; min-width: 48px; text-align: right; }
+.gamma-trace-status { display: flex; justify-content: space-between; gap: 8px; margin-top: 9px; color: #65725f; font-size: 12px; }
+body[data-gamma="true"] .brain-stage { bottom: 300px; }
+body[data-gamma="true"] .stage-heading h1 { font-size: 32px; }
+body[data-gamma="true"] .layer-note,body[data-gamma="true"] .orientation,body[data-gamma="true"] .stage-meta { display: none; }
+body[data-gamma="true"] .view-switch,body[data-gamma="true"] #separate-btn { display: none; }
+@media(max-width:1150px) {
+ body[data-gamma="true"] .workspace { min-height: 760px; }
+ body[data-gamma="true"] .brain-stage { top: 250px; }
+ #gamma-timeline { left: 16px; right: 16px; padding: 12px; }
+ .gamma-time-controls { gap: 6px; }
+}
+@media(max-width:600px) {
+ body[data-species="mouse"] .gamma-launch { margin-bottom: 12px; width: 100%; }
+ body[data-gamma="true"] .workspace { height: 760px; }
+ body[data-gamma="true"] .brain-stage { top: 220px; bottom: 280px; }
+ #gamma-timeline { bottom: 78px; }
+ .gamma-tabs { padding-left: 24px; }
+}

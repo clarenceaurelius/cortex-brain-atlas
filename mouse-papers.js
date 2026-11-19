@@ -184,5 +184,16 @@ export const mousePapers = {
     "type": "Rodent motor learning review",
     "summary": "Reviews activity, connectivity, and synaptic changes in motor cortex during learning.",
     "pmc": "PMC5714655"
+  },
+  "mouseGamma": {
+    "title": "Flexible perceptual encoding by discrete gamma events",
+    "authors": "Perrenoud, Q., Fonseca, A. H. de O., Airhart, A., Bonanno, J., Mao, R. & Cardin, J. A.",
+    "year": 2025,
+    "journal": "Nature",
+    "doi": "10.1038/s41586-025-09604-9",
+    "pmid": "41062693",
+    "pmc": "PMC12657229",
+    "type": "Mouse recordings & optogenetic study",
+    "summary": "Links discrete V1 gamma events to thalamic input, visual encoding, and task-dependent behavior. Combines laminar recordings, intracellular measurements, and optogenetic manipulations."
   }
 };

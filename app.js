@@ -8,8 +8,9 @@ import { buildNeuron } from './cellular-model.js';
 import { renderScaleBar } from './scale-bar.js';
 import { anatomy, functional, pathways, extraPapers, layerGroups, layerNotes } from './atlas-data.js?v=13';
 import { paperURL, renderCitations, regionEvidence } from './references.js?v=13';
-import { mouseRegions, mouseGroups, MOUSE_MM_PER_UNIT, buildMouseBrain, styleMouseMesh } from './mouse-brain.js?v=13';
-import { mousePapers } from './mouse-papers.js?v=13';
+import { mouseRegions, mouseGroups, MOUSE_MM_PER_UNIT, buildMouseBrain, styleMouseMesh } from './mouse-brain.js?v=14';
+import { mousePapers } from './mouse-papers.js?v=14';
+import { GammaLesson } from './gamma-lesson.js?v=14';
 Object.assign(papers,extraPapers,cellularPapers,mousePapers);
 layerGroups.mouse=mouseGroups;
 layerNotes.mouse='Allen CCFv3 · adult mouse · selected anatomical regions.';
@@ -94,6 +95,7 @@ function renderOverviewSections(sections=[]){
 }
 
 function renderDetail(){
+ if(layer==='mouse'&&gammaLesson.active){gammaLesson.renderDetail();return;}
  if(layer==='cellular'){cellularViewer.renderDetail();return;}
  if(layer==='slices'){sliceViewer.renderDetail();return;}
  const r=region(selected);document.documentElement.style.setProperty('--accent',r.color);
@@ -105,7 +107,8 @@ function renderDetail(){
  <p class="description">${r.description}${cite(...evidence.overview)}</p><div class="location">${icon('pin')}<span>${r.location}${cite(...locationRefs)}</span></div>${r.pathway?`<button class="primary-button projection-link" data-region="${r.pathway}">${icon('network')} Explore LC projections</button>`:''}${renderOverviewSections(r.overviewSections)}<h3 class="section-title">WHAT IT HELPS YOU DO</h3><div class="function-list">${r.functions.map(([title,body],i)=>`<div class="function-item"><span class="function-icon">${icon(['target','activity','message'][i])}</span><div><h4>${title}</h4><p>${body}${cite(...evidence.functions[i])}</p></div></div>`).join('')}</div><div class="everyday"><div>${icon('bulb')} In everyday life</div><p>${r.example}${cite(...evidence.example)}</p></div>${r.clinicalNote?`<h3 class="section-title">PARKINSON’S DISEASE</h3><p class="description">${r.clinicalNote}${cite('locusCoeruleusParkinson')}</p>`: ''}<div class="connections-section"><h3 class="section-title">EXPLORE RELATED REGIONS</h3><div class="connected">${r.connections.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div><div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">View ${r.papers.length} papers ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}</div>${r.schematic?`<p class="model-note">${r.modelNote||'This structure is shown schematically. Its shape, scale, and placement are approximate.'}</p>`:''}`:`<p class="description">A curated starting point for understanding this region. These foundational papers include reviews and original studies.</p>${r.papers.map(paperCard).join('')}<p class="model-note">Findings describe interacting networks. A paper about one region does not establish that a function belongs only to that region.</p>`}<div class="detail-navigator"><span>${String(broadRegions.indexOf(r)+1).padStart(2,'0')} / ${broadRegions.length} REGIONS</span><button id="next-region">Next region ${icon('arrow-right')}</button></div></div>`;
 }
 
-function selectRegion(id,focus=true){
+function selectRegion(id,focus=true,keepGamma=false){
+ if(gammaLesson.active&&!keepGamma)gammaLesson.exit();
  const r=region(id);if(!r)return;
  const nextLayer=r.layer||'regions';
  if(nextLayer!==layer)configureLayer(nextLayer);
@@ -135,6 +138,7 @@ function exploreRandomRegion(){
  selectRegion(next.id);
 }
 function configureLayer(next){
+ if(gammaLesson.active)gammaLesson.exit();
  if(layer==='slices'&&next!=='slices')sliceViewer.exit();
  if(layer==='cellular'&&next!=='cellular'){
   cancelCellularZoom();
@@ -209,7 +213,7 @@ function renderAtlasDetail(r){
 
  const projectionLegend=r.legend?`<ul class="projection-legend">${r.legend.map(([label,color])=>`<li><i style="background:${color}"></i>${label}</li>`).join('')}</ul>`:'';
  const pathwayReference=r.source?`<a class="anatomy-source" href="${r.source}" target="_blank" rel="noopener noreferrer">${htmlEscape(sourceLabel)} ${icon('arrow-up-right')}</a>`:'';
- $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>${r.layer==='mouse'?'MOUSE REGION':path?'PATHWAY':anatomical?'ANATOMY':'FUNCTION'} IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${kind}</div><h2 class="detailed-name">${r.name}</h2><p class="region-tagline">${r.short}</p></div><div class="detail-tabs" role="tablist" aria-label="Atlas details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='research'?r.papers.map(paperCard).join('')+pathwayReference:`<p class="description">${r.description}${cite(...descriptionRefs,...anatomyRefs,...routeRefs)}</p><div class="location">${icon('pin')}<span>${location}${anatomical&&!r.schematic?cite('destrieux'):''}</span></div>${overviewSections}${path?`<h3 class="section-title">${r.branches?'PROJECTION TARGETS':r.bidirectional?'SIMPLIFIED ROUTE · BIDIRECTIONAL':'SIMPLIFIED ROUTE · DIRECTION OF FLOW'}</h3>${projectionLegend}<ol class="pathway-steps">${r.steps.map((step,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><p>${step}${cite(...(r.stepRefs?.[i]||[]))}</p></li>`).join('')}</ol><p class="description">Route sources${cite(...r.papers,...routeRefs)}</p><button class="primary-button" id="trace-path">${icon('activity')} Trace this pathway</button>`:''}<p class="model-note">${note}${cite(...noteRefs)}</p>${!anatomical&&!path&&r.layer!=='mouse'&&!r.overviewSections?`<p class="model-note">Functional field definitions depend on the mapping method and can vary between people.${cite('glasser')}</p>`:''}${r.human?`<div class="mouse-human-link"><h3 class="section-title">EXPLORE ACROSS SPECIES</h3><button class="primary-button" data-region="${r.human}">Human ${htmlEscape(region(r.human).name)}</button><p class="model-note">A related human structure for comparison. Atlas definitions and functional organization differ across species.${cite('mouseCCF','mouseConnectome')}</p></div>`:''}${related.length?`<div class="connections-section"><h3 class="section-title">EXPLORE RELATED STRUCTURES</h3><div class="connected">${related.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div>`:''}<div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">${r.papers.length} references ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}${pathwayReference}</div>`}<div class="detail-navigator"><span>${currentItems().findIndex(x=>x.id===r.id)+1} / ${currentItems().length} ITEMS</span><button id="next-region">Next ${icon('arrow-right')}</button></div></div>`;
+ $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>${r.layer==='mouse'?'MOUSE REGION':path?'PATHWAY':anatomical?'ANATOMY':'FUNCTION'} IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${kind}</div><h2 class="detailed-name">${r.name}</h2><p class="region-tagline">${r.short}</p></div><div class="detail-tabs" role="tablist" aria-label="Atlas details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='research'?r.papers.map(paperCard).join('')+pathwayReference:`<p class="description">${r.description}${cite(...descriptionRefs,...anatomyRefs,...routeRefs)}</p><div class="location">${icon('pin')}<span>${location}${anatomical&&!r.schematic?cite('destrieux'):''}</span></div>${overviewSections}${r.gamma?'<button class="primary-button gamma-region-link" id="gamma-open-region">Explore gamma events</button>':''}${path?`<h3 class="section-title">${r.branches?'PROJECTION TARGETS':r.bidirectional?'SIMPLIFIED ROUTE · BIDIRECTIONAL':'SIMPLIFIED ROUTE · DIRECTION OF FLOW'}</h3>${projectionLegend}<ol class="pathway-steps">${r.steps.map((step,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><p>${step}${cite(...(r.stepRefs?.[i]||[]))}</p></li>`).join('')}</ol><p class="description">Route sources${cite(...r.papers,...routeRefs)}</p><button class="primary-button" id="trace-path">${icon('activity')} Trace this pathway</button>`:''}<p class="model-note">${note}${cite(...noteRefs)}</p>${!anatomical&&!path&&r.layer!=='mouse'&&!r.overviewSections?`<p class="model-note">Functional field definitions depend on the mapping method and can vary between people.${cite('glasser')}</p>`:''}${r.human?`<div class="mouse-human-link"><h3 class="section-title">EXPLORE ACROSS SPECIES</h3><button class="primary-button" data-region="${r.human}">Human ${htmlEscape(region(r.human).name)}</button><p class="model-note">A related human structure for comparison. Atlas definitions and functional organization differ across species.${cite('mouseCCF','mouseConnectome')}</p></div>`:''}${related.length?`<div class="connections-section"><h3 class="section-title">EXPLORE RELATED STRUCTURES</h3><div class="connected">${related.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div>`:''}<div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">${r.papers.length} references ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}${pathwayReference}</div>`}<div class="detail-navigator"><span>${currentItems().findIndex(x=>x.id===r.id)+1} / ${currentItems().length} ITEMS</span><button id="next-region">Next ${icon('arrow-right')}</button></div></div>`;
 }
 
 function showModal(title,subtitle,content){
@@ -440,6 +444,8 @@ function animate(now){
  for(const route of routeAnimations){route.tracer.visible=layer==='pathways'&&selected===route.id;if(route.tracer.visible){const progress=reducedMotion?.55:((now-traceStart)%6500)/6500;const t=route.bidirectional?(progress<.5?progress*2:2-progress*2):progress;route.tracer.position.copy(route.curve.getPoint(t));}}
  if(cellularZoom)advanceCellularZoom(now);
  else controls.update();
+ gammaLesson.update(now);
+ if(layer==='mouse')gammaLesson.updateCircuit(THREE,mouseBrain,hemisphere);
  updateSceneScale();updateLabels();renderer.render(scene,camera);
 }
 function updateSceneScale(){
@@ -458,7 +464,7 @@ function updateLabels(){
  const screenLabels=[];
  for(const item of labels){
   const {el,region:r}=item;
-  const visible=labelsOn&&(layer==='mouse'?(r.id===selected||r.group===region(selected)?.group&&!r.parent&&currentItems().filter(x=>x.group===r.group&&!x.parent).slice(0,4).some(x=>x.id===r.id)):layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
+  const visible=labelsOn&&(layer==='mouse'&&gammaLesson.active?['mouse-visp','mouse-lgd'].includes(r.id):layer==='mouse'?(r.id===selected||r.group===region(selected)?.group&&!r.parent&&currentItems().filter(x=>x.group===r.group&&!x.parent).slice(0,4).some(x=>x.id===r.id)):layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
   el.style.display=visible?'flex':'none';if(!visible)continue;
   const side=hemisphere==='right'?'right':'left';const position=r.positions?.[side]||r.position;if(!position){el.style.display='none';continue;}const point=new THREE.Vector3(...position);if(r.layer==='mouse'&&hemisphere==='both'&&separated)point.x+=side==='left'?-.35:.35;
   else if(r.layer!=='mouse'&&(r.group==='cortex'||r.layer==='anatomy'||r.layer==='functional')&&hemisphere==='both'&&(separated||deep))point.x+=side==='left'?-.65:.65;
@@ -485,7 +491,7 @@ async function ensureMouseBrain(){
  loading.innerHTML='<span class="loading-ring"></span><p>Loading the Allen mouse atlas…</p>';
  loading.classList.toggle('hidden',layer!=='mouse');
  mouseLoad=(async()=>{
-  const response=await fetch('./assets/mouse/brain.json.gz');
+  const response=await fetch('./assets/mouse/brain.json.gz?v=14');
   if(!response.ok)throw Error('Mouse surface data unavailable');
   const data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
   mouseBrain=buildMouseBrain(THREE,data);
@@ -548,6 +554,8 @@ function renderTour(){const tour=layer==='mouse'?mouseTour:humanTour;if(tourStep
 // All lists and model labels use the same selection path, including keyboard activation.
 document.addEventListener('click',async e=>{
  const el=e.target.closest('button');if(!el)return;
+ if(el.id==='gamma-open'||el.id==='gamma-open-region'){openGammaLesson();return;}
+ if(el.dataset.gammaStep!==undefined||el.dataset.gammaContext||el.dataset.gammaCondition||el.dataset.gammaEvent!==undefined||el.dataset.gammaRegion||el.id==='gamma-play'||el.id==='gamma-close'){gammaLesson.handle(el);return;}
  if(el.dataset.species){setLayer(el.dataset.species==='mouse'?'mouse':'regions');return;}
  if(el.dataset.layer){setLayer(el.dataset.layer);return;}
  if(el.dataset.region){selectRegion(el.dataset.region);if(el.closest('#modal'))$('#modal').close();return;}
@@ -580,7 +588,7 @@ document.addEventListener('click',async e=>{
  }
 });
 $('#region-search').addEventListener('input',renderRegions);
-document.addEventListener('input',e=>{if(e.target.id==='paper-search')renderLibrary();});
+document.addEventListener('input',e=>{if(e.target.id==='paper-search')renderLibrary();if(e.target.id==='gamma-time')gammaLesson.seek(e.target.value);});
 document.addEventListener('change',e=>{if(e.target.id==='paper-region')renderLibrary();if(e.target.id==='hemisphere')setHemisphere(e.target.value);if(e.target.id==='camera-preset')setCameraPreset(e.target.value);});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const rect=$('#modal').getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)$('#modal').close();}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){tourStep=-1;renderTour();$('#workspace').classList.remove('expanded');resize();}if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)||$('#modal').open)return;if(e.key==='/'&&layer!=='cellular'){e.preventDefault();$('#region-search').focus();}if(e.key==='+'||e.key==='=')zoom(.85);if(e.key==='-')zoom(1.17);});
@@ -684,4 +692,20 @@ const cellularViewer=new CellularViewer({
  paperCard,
  cite,
 });
+const gammaLesson=new GammaLesson({
+ root:$('#gamma-timeline'),
+ panel:$('#detail-panel'),
+ cite,paperCard,reducedMotion,
+ onClose:()=>{updateMaterials();renderDetail();resize();},
+ onRegion:id=>selectRegion(id,true,true),
+});
+function openGammaLesson(){
+ if(layer!=='mouse')setLayer('mouse');
+ selectRegion('mouse-visp');
+ setHemisphere('left');
+ setView('deep',false);
+ setCameraPreset('medial');
+ gammaLesson.enter();
+ resize();
+}
 $('.tiny-count').textContent=Object.keys(papers).length;renderRegions();renderDetail();initBrain();
