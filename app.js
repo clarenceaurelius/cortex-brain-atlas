@@ -1,16 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
-import { regions as broadRegions, papers } from './data.js?v=7';
-import { SliceViewer } from './slice-viewer.js?v=11';
+import { regions as broadRegions, papers } from './data.js?v=13';
+import { SliceViewer } from './slice-viewer.js?v=13';
 import { imageToRAS, rasToScene, SCENE_MM_PER_UNIT } from './slice-data.js?v=6';
 import { CellularViewer, cellularPapers, cellularPaperIds } from './cellular-viewer.js?v=11';
 import { buildNeuron } from './cellular-model.js';
 import { renderScaleBar } from './scale-bar.js';
-import { anatomy, functional, pathways, extraPapers, layerGroups, layerNotes } from './atlas-data.js?v=11';
-import { paperURL, renderCitations, regionEvidence } from './references.js?v=11';
-Object.assign(papers,extraPapers,cellularPapers);
+import { anatomy, functional, pathways, extraPapers, layerGroups, layerNotes } from './atlas-data.js?v=13';
+import { paperURL, renderCitations, regionEvidence } from './references.js?v=13';
+import { mouseRegions, mouseGroups, MOUSE_MM_PER_UNIT, buildMouseBrain, styleMouseMesh } from './mouse-brain.js?v=13';
+import { mousePapers } from './mouse-papers.js?v=13';
+Object.assign(papers,extraPapers,cellularPapers,mousePapers);
+layerGroups.mouse=mouseGroups;
+layerNotes.mouse='Allen CCFv3 · adult mouse · selected anatomical regions.';
 const cite=(...refs)=>renderCitations(papers,refs);
-const regions=[...broadRegions,...anatomy,...functional,...pathways];
+const regions=[...broadRegions,...anatomy,...functional,...pathways,...mouseRegions];
 
 const $ = (q, root=document) => root.querySelector(q);
 const $$ = (q, root=document) => [...root.querySelectorAll(q)];
@@ -83,6 +87,12 @@ function miniPaper(paper){
  return `<a class="mini-paper" href="${url}" target="_blank" rel="noopener noreferrer"><h4>${paper.title}</h4><p>${paper.authors} · ${paper.year}</p><span>${paper.pmid?'Read on PubMed':'Read the article'} ${icon('arrow-up-right')}</span></a>`;
 }
 
+function renderOverviewSections(sections=[]){
+ return sections.map(({title,paragraphs})=>
+  `<h3 class="section-title">${htmlEscape(title)}</h3>`+
+  paragraphs.map(([body,refs])=>`<p class="description">${htmlEscape(body)}${cite(...refs)}</p>`).join('')).join('');
+}
+
 function renderDetail(){
  if(layer==='cellular'){cellularViewer.renderDetail();return;}
  if(layer==='slices'){sliceViewer.renderDetail();return;}
@@ -92,7 +102,7 @@ function renderDetail(){
  const anatomySource=r.group==='cortex'?'corticalAnatomy':r.group==='deep'?'internalAnatomy':'centralAnatomy';
  const locationRefs=evidence.location||[anatomySource];
  $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>REGION IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" title="Bookmark region" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${r.group==='cortex'?'Cerebral cortex':r.group==='deep'?'Deep structure':'Cerebellum & brainstem'}</div><h2>${r.name}</h2><p class="latin">${r.latin}</p><p class="region-tagline">${r.tagline}</p></div><div class="detail-tabs" role="tablist" aria-label="Region details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='overview'?`
- <p class="description">${r.description}${cite(...evidence.overview)}</p><div class="location">${icon('pin')}<span>${r.location}${cite(...locationRefs)}</span></div>${r.pathway?`<button class="primary-button projection-link" data-region="${r.pathway}">${icon('network')} Explore LC projections</button>`:''}<h3 class="section-title">WHAT IT HELPS YOU DO</h3><div class="function-list">${r.functions.map(([title,body],i)=>`<div class="function-item"><span class="function-icon">${icon(['target','activity','message'][i])}</span><div><h4>${title}</h4><p>${body}${cite(...evidence.functions[i])}</p></div></div>`).join('')}</div><div class="everyday"><div>${icon('bulb')} In everyday life</div><p>${r.example}${cite(...evidence.example)}</p></div>${r.clinicalNote?`<h3 class="section-title">PARKINSON’S DISEASE</h3><p class="description">${r.clinicalNote}${cite('locusCoeruleusParkinson')}</p>`: ''}<div class="connections-section"><h3 class="section-title">EXPLORE RELATED REGIONS</h3><div class="connected">${r.connections.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div><div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">View ${r.papers.length} papers ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}</div>${r.schematic?`<p class="model-note">${r.modelNote||'This structure is shown schematically. Its shape, scale, and placement are approximate.'}</p>`:''}`:`<p class="description">A curated starting point for understanding this region. These foundational papers include reviews and original studies.</p>${r.papers.map(paperCard).join('')}<p class="model-note">Findings describe interacting networks. A paper about one region does not establish that a function belongs only to that region.</p>`}<div class="detail-navigator"><span>${String(broadRegions.indexOf(r)+1).padStart(2,'0')} / ${broadRegions.length} REGIONS</span><button id="next-region">Next region ${icon('arrow-right')}</button></div></div>`;
+ <p class="description">${r.description}${cite(...evidence.overview)}</p><div class="location">${icon('pin')}<span>${r.location}${cite(...locationRefs)}</span></div>${r.pathway?`<button class="primary-button projection-link" data-region="${r.pathway}">${icon('network')} Explore LC projections</button>`:''}${renderOverviewSections(r.overviewSections)}<h3 class="section-title">WHAT IT HELPS YOU DO</h3><div class="function-list">${r.functions.map(([title,body],i)=>`<div class="function-item"><span class="function-icon">${icon(['target','activity','message'][i])}</span><div><h4>${title}</h4><p>${body}${cite(...evidence.functions[i])}</p></div></div>`).join('')}</div><div class="everyday"><div>${icon('bulb')} In everyday life</div><p>${r.example}${cite(...evidence.example)}</p></div>${r.clinicalNote?`<h3 class="section-title">PARKINSON’S DISEASE</h3><p class="description">${r.clinicalNote}${cite('locusCoeruleusParkinson')}</p>`: ''}<div class="connections-section"><h3 class="section-title">EXPLORE RELATED REGIONS</h3><div class="connected">${r.connections.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div><div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">View ${r.papers.length} papers ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}</div>${r.schematic?`<p class="model-note">${r.modelNote||'This structure is shown schematically. Its shape, scale, and placement are approximate.'}</p>`:''}`:`<p class="description">A curated starting point for understanding this region. These foundational papers include reviews and original studies.</p>${r.papers.map(paperCard).join('')}<p class="model-note">Findings describe interacting networks. A paper about one region does not establish that a function belongs only to that region.</p>`}<div class="detail-navigator"><span>${String(broadRegions.indexOf(r)+1).padStart(2,'0')} / ${broadRegions.length} REGIONS</span><button id="next-region">Next region ${icon('arrow-right')}</button></div></div>`;
 }
 
 function selectRegion(id,focus=true){
@@ -100,7 +110,10 @@ function selectRegion(id,focus=true){
  const nextLayer=r.layer||'regions';
  if(nextLayer!==layer)configureLayer(nextLayer);
  selected=id;detailTab='overview';
- if(r.layer){
+ if(r.layer==='mouse'){
+  setView(r.view||'surface',false);
+  if(focus)focusMouseRegion(r);
+ }else if(r.layer){
   if(r.layer==='pathways'){setView('deep',false);setHemisphere('both');}
   else {setView(r.parcels?.some(n=>[17,18,33,35,36,48,49,50].includes(n))?'deep':'surface',false);setHemisphere(r.preferredSide||'left');}
   if(focus)setCameraPreset(r.camera||(r.layer==='pathways'?'lateral':'lateral'));
@@ -114,7 +127,7 @@ function selectRegion(id,focus=true){
  $('#detail-panel').scrollTop=0;
 }
 function exploreRandomRegion(){
- const choices=regions.filter(r=>r.layer!=='pathways'&&r.id!==selected);
+ const choices=regions.filter(r=>(layer==='mouse'?r.layer==='mouse':r.layer!=='pathways'&&r.layer!=='mouse')&&r.id!==selected);
  const next=choices[Math.floor(Math.random()*choices.length)];
  tourStep=-1;
  renderTour();
@@ -135,6 +148,19 @@ function configureLayer(next){
  layer=next;
  $$('[data-layer]').forEach(b=>{b.classList.toggle('active',b.dataset.layer===layer);b.setAttribute('aria-pressed',b.dataset.layer===layer);});
  document.body.dataset.layer=layer;
+ const mouse=layer==='mouse';
+ document.body.dataset.species=mouse?'mouse':'human';
+ $$('[data-species]').forEach(button=>{
+  const active=(button.dataset.species==='mouse')===mouse;
+  button.classList.toggle('active',active);
+  button.setAttribute('aria-pressed',active);
+ });
+ $('.stage-heading .eyebrow').innerHTML=mouse?'EXPLORE THE MOUSE BRAIN':'<span class="green-dot"></span> EXPLORE THE HUMAN BRAIN';
+ $('.stage-heading h1').textContent=mouse?'The mouse brain.':'A world within.';
+ $('.stage-heading p').textContent=mouse?'Select a region to explore its role and research.':'Follow your curiosity. Discover what makes you, you.';
+ stage.setAttribute('aria-label',mouse?'Interactive 3D mouse brain from Allen CCFv3. Drag to rotate, scroll to zoom, or select a region.':brainStageLabel);
+ $('#mouse-loading').classList.toggle('hidden',!mouse||!!mouseBrain);
+ if(mouse)ensureMouseBrain();
  if(next==='slices'||next==='cellular'){
   const cellular=next==='cellular';
   lastSliceView=null;
@@ -143,10 +169,10 @@ function configureLayer(next){
   $('.sidebar-intro').textContent=cellular?'From a cortical surface to a cell.':'Look beneath the surface.';
   if(brain)createLabels();return;
  }filter='all';$('#region-search').value='';
- const titles={regions:'Brain regions',anatomy:'Gyri, sulci & fissures',functional:'Functional areas',pathways:'Common pathways'};
+ const titles={mouse:'Mouse brain regions',regions:'Brain regions',anatomy:'Gyri, sulci & fissures',functional:'Functional areas',pathways:'Common pathways'};
  $('#sidebar-heading').textContent=titles[layer];$('#item-count').textContent=currentItems().length;
- $('.sidebar-intro').textContent={regions:'Every region has a story.',anatomy:'Follow the folds.',functional:'Explore the cortical systems.',pathways:'Follow the connections.'}[layer];
- $('.region-filter').innerHTML='<button data-filter="all" class="active">All</button>'+layerGroups[layer].map(([id,name])=>`<button data-filter="${id}">${{cortex:'Cortical',hindbrain:'Hindbrain',deep:'Deep',gyri:'Gyri',sulci:'Sulci',fissures:'Fissures',visual:'Visual',auditory:'Auditory',motor:'Motor',sensory:'Sensory',association:'Other',language:'Language',commissural:'Callosal',neuromodulatory:'Neuromodulatory'}[id]}</button>`).join('');
+ $('.sidebar-intro').textContent={mouse:'Anatomy from the Allen atlas.',regions:'Every region has a story.',anatomy:'Follow the folds.',functional:'Explore the cortical systems.',pathways:'Follow the connections.'}[layer];
+ $('.region-filter').innerHTML='<button data-filter="all" class="active">All</button>'+layerGroups[layer].map(([id,name])=>`<button data-filter="${id}">${{cortex:'Cortical',olfactory:'Olfactory',hindbrain:'Hindbrain',deep:'Deep',gyri:'Gyri',sulci:'Sulci',fissures:'Fissures',visual:'Visual',auditory:'Auditory',motor:'Motor',sensory:'Sensory',association:'Other',language:'Language',commissural:'Callosal',neuromodulatory:'Neuromodulatory'}[id]}</button>`).join('');
  $('#layer-note').textContent=layerNotes[layer];
  if(brain)createLabels();
 }
@@ -166,25 +192,24 @@ function setLayer(next){
   }else sliceViewer.enter();
   return;
  }
- selectRegion({regions:'frontal',anatomy:'anat-46',functional:'fn-v1',pathways:'path-optic'}[next]);
+ selectRegion({mouse:'mouse-mop',regions:'frontal',anatomy:'anat-46',functional:'fn-v1',pathways:'path-optic'}[next]);
 }
 function renderAtlasDetail(r){
  const anatomical=r.layer==='anatomy',path=r.layer==='pathways';
- const kind=anatomical?'Anatomical landmark':path?'Schematic pathway':'Functional teaching location';
- const note=r.modelNote||(anatomical?(r.schematic?'This cleft is indicated by a schematic curve.':'The highlighted surface follows an anatomical Destrieux parcel; it does not define a functional boundary.'):(path?layerNotes.pathways:layerNotes.functional));
- const location=anatomical?'Destrieux a2009s · both hemispheres':path?'Illustrative route · not diffusion MRI':(r.hemis?.length===1?'Typically left hemisphere':'Bilateral territories')+' · approximate marker';
+ const kind=r.layer==='mouse'?'Mouse brain region':anatomical?'Anatomical landmark':path?'Schematic pathway':'Functional teaching location';
+ const note=r.modelNote||(r.layer==='mouse'?'Surface derived from the Allen CCFv3 2017 annotation meshes. Boundaries are simplified for browser display.':anatomical?(r.schematic?'This cleft is indicated by a schematic curve.':'The highlighted surface follows an anatomical Destrieux parcel; it does not define a functional boundary.'):(path?layerNotes.pathways:layerNotes.functional));
+ const location=r.layer==='mouse'?`Allen CCFv3 · ${r.code} · structure ${r.structureId}`:anatomical?'Destrieux a2009s · both hemispheres':path?'Illustrative route · not diffusion MRI':(r.hemis?.length===1?'Typically left hemisphere':'Bilateral territories')+' · approximate marker';
  const related=(r.connections||[]).filter(id=>region(id));
- const overviewSections=(r.overviewSections||[]).map(({title,paragraphs})=>
-  `<h3 class="section-title">${htmlEscape(title)}</h3>`+
-  paragraphs.map(([body,refs])=>`<p class="description">${htmlEscape(body)}${cite(...refs)}</p>`).join('')).join('');
+ const overviewSections=renderOverviewSections(r.overviewSections);
  const descriptionRefs=r.descriptionRefs||r.papers;
- const routeRefs=r.source?[{label:'Pathway anatomy reference',url:r.source}]:[];
+ const sourceLabel=r.sourceLabel||'Pathway anatomy reference';
+ const routeRefs=r.source?[{label:sourceLabel,url:r.source}]:[];
  const anatomyRefs=anatomical?['corticalAnatomy']:[];
- const noteRefs=r.modelRefs||(anatomical&&!r.schematic?['destrieux']:path&&r.branches?['locusCoeruleusParkinson']:[]);
+ const noteRefs=r.modelRefs||(r.layer==='mouse'?['mouseCCF']:anatomical&&!r.schematic?['destrieux']:[]);
 
  const projectionLegend=r.legend?`<ul class="projection-legend">${r.legend.map(([label,color])=>`<li><i style="background:${color}"></i>${label}</li>`).join('')}</ul>`:'';
- const pathwayReference=r.source?`<a class="anatomy-source" href="${r.source}" target="_blank" rel="noopener noreferrer">Pathway anatomy reference ${icon('arrow-up-right')}</a>`:'';
- $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>${path?'PATHWAY':anatomical?'ANATOMY':'FUNCTION'} IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${kind}</div><h2 class="detailed-name">${r.name}</h2><p class="region-tagline">${r.short}</p></div><div class="detail-tabs" role="tablist" aria-label="Atlas details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='research'?r.papers.map(paperCard).join('')+pathwayReference:`<p class="description">${r.description}${cite(...descriptionRefs,...anatomyRefs,...routeRefs)}</p><div class="location">${icon('pin')}<span>${location}${anatomical&&!r.schematic?cite('destrieux'):''}</span></div>${overviewSections}${path?`<h3 class="section-title">${r.branches?'PROJECTION TARGETS':r.bidirectional?'SIMPLIFIED ROUTE · BIDIRECTIONAL':'SIMPLIFIED ROUTE · DIRECTION OF FLOW'}</h3>${projectionLegend}<ol class="pathway-steps">${r.steps.map((step,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><p>${step}</p></li>`).join('')}</ol><p class="description">Route sources${cite(...r.papers,...routeRefs)}</p><button class="primary-button" id="trace-path">${icon('activity')} Trace this pathway</button>`:''}<p class="model-note">${note}${cite(...noteRefs)}</p>${!anatomical&&!path&&!r.overviewSections?`<p class="model-note">Functional field definitions depend on the mapping method and can vary between people.${cite('glasser')}</p>`:''}${related.length?`<div class="connections-section"><h3 class="section-title">EXPLORE RELATED STRUCTURES</h3><div class="connected">${related.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div>`:''}<div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">${r.papers.length} references ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}${pathwayReference}</div>`}<div class="detail-navigator"><span>${currentItems().findIndex(x=>x.id===r.id)+1} / ${currentItems().length} ITEMS</span><button id="next-region">Next ${icon('arrow-right')}</button></div></div>`;
+ const pathwayReference=r.source?`<a class="anatomy-source" href="${r.source}" target="_blank" rel="noopener noreferrer">${htmlEscape(sourceLabel)} ${icon('arrow-up-right')}</a>`:'';
+ $('#detail-panel').innerHTML=`<div class="detail-top"><div class="detail-eyebrow"><span>${r.layer==='mouse'?'MOUSE REGION':path?'PATHWAY':anatomical?'ANATOMY':'FUNCTION'} IN FOCUS</span><button class="icon-button ${savedRegions.has(r.id)?'active':''}" id="save-region" aria-pressed="${savedRegions.has(r.id)}" aria-label="Bookmark ${r.name}">${icon(savedRegions.has(r.id)?'check':'bookmark')}</button></div><div class="selected-chip"><i></i>${kind}</div><h2 class="detailed-name">${r.name}</h2><p class="region-tagline">${r.short}</p></div><div class="detail-tabs" role="tablist" aria-label="Atlas details"><button role="tab" aria-selected="${detailTab==='overview'}" data-tab="overview" class="${detailTab==='overview'?'active':''}">Overview</button><button role="tab" aria-selected="${detailTab==='research'}" data-tab="research" class="${detailTab==='research'?'active':''}">Research <span class="tab-count">${r.papers.length}</span></button></div><div class="detail-body" role="tabpanel">${detailTab==='research'?r.papers.map(paperCard).join('')+pathwayReference:`<p class="description">${r.description}${cite(...descriptionRefs,...anatomyRefs,...routeRefs)}</p><div class="location">${icon('pin')}<span>${location}${anatomical&&!r.schematic?cite('destrieux'):''}</span></div>${overviewSections}${path?`<h3 class="section-title">${r.branches?'PROJECTION TARGETS':r.bidirectional?'SIMPLIFIED ROUTE · BIDIRECTIONAL':'SIMPLIFIED ROUTE · DIRECTION OF FLOW'}</h3>${projectionLegend}<ol class="pathway-steps">${r.steps.map((step,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><p>${step}${cite(...(r.stepRefs?.[i]||[]))}</p></li>`).join('')}</ol><p class="description">Route sources${cite(...r.papers,...routeRefs)}</p><button class="primary-button" id="trace-path">${icon('activity')} Trace this pathway</button>`:''}<p class="model-note">${note}${cite(...noteRefs)}</p>${!anatomical&&!path&&r.layer!=='mouse'&&!r.overviewSections?`<p class="model-note">Functional field definitions depend on the mapping method and can vary between people.${cite('glasser')}</p>`:''}${r.human?`<div class="mouse-human-link"><h3 class="section-title">EXPLORE ACROSS SPECIES</h3><button class="primary-button" data-region="${r.human}">Human ${htmlEscape(region(r.human).name)}</button><p class="model-note">A related human structure for comparison. Atlas definitions and functional organization differ across species.${cite('mouseCCF','mouseConnectome')}</p></div>`:''}${related.length?`<div class="connections-section"><h3 class="section-title">EXPLORE RELATED STRUCTURES</h3><div class="connected">${related.map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div></div>`:''}<div class="research-preview"><div class="section-title-row"><h3 class="section-title">FOLLOW THE SCIENCE</h3><button data-tab="research">${r.papers.length} references ${icon('arrow-right')}</button></div>${miniPaper(papers[r.papers[0]])}${pathwayReference}</div>`}<div class="detail-navigator"><span>${currentItems().findIndex(x=>x.id===r.id)+1} / ${currentItems().length} ITEMS</span><button id="next-region">Next ${icon('arrow-right')}</button></div></div>`;
 }
 
 function showModal(title,subtitle,content){
@@ -194,22 +219,23 @@ function showModal(title,subtitle,content){
 }
 function showLibrary(saved=false){
  librarySaved=saved;
- showModal(saved?'Your reading list':'The research library',saved?'A space for papers you want to return to.':'Studies and reviews matched to regions, pathways, cellular signalling, and atlas methods.',`${saved&&savedRegions.size?`<h3 class="section-title">BOOKMARKED REGIONS</h3><div class="connected" style="margin-bottom:24px">${[...savedRegions].filter(id=>region(id)).map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div>`:''}<div class="library-controls"><label class="search">${icon('search')}<input id="paper-search" aria-label="Search research papers" placeholder="Search papers, authors, or topics…"></label><select id="paper-region" aria-label="Filter papers by topic"><option value="all">All topics</option><option value="cellular">Cellular neuroscience</option>${regions.map(r=>`<option value="${r.id}">${r.name}</option>`).join('')}</select></div><div id="library-papers"></div>`);
+ showModal(saved?'Your reading list':'The research library',saved?'A space for papers you want to return to.':'Studies and reviews matched to regions, pathways, cellular signalling, and atlas methods.',`${saved&&savedRegions.size?`<h3 class="section-title">BOOKMARKED REGIONS</h3><div class="connected" style="margin-bottom:24px">${[...savedRegions].filter(id=>region(id)).map(id=>`<button data-region="${id}" style="--region-color:${region(id).color}"><span class="region-dot"></span>${region(id).name}</button>`).join('')}</div>`:''}<div class="library-controls"><label class="search">${icon('search')}<input id="paper-search" aria-label="Search research papers" placeholder="Search papers, authors, or topics…"></label><select id="paper-region" aria-label="Filter papers by topic"><option value="all">All topics</option><option value="cellular">Cellular neuroscience</option><option value="mouse">Mouse brain</option>${regions.map(r=>`<option value="${r.id}">${r.layer==='mouse'?'Mouse · ':''}${r.name}</option>`).join('')}</select></div><div id="library-papers"></div>`);
  renderLibrary();
 }
 function renderLibrary(){
  if(!$('#library-papers'))return;
  const query=$('#paper-search').value.toLowerCase().trim();const r=$('#paper-region').value;
  const cellularIds=Object.values(cellularPaperIds).flat();
- const topicPapers=r==='cellular'?cellularIds:region(r)?.papers;
+ const topicPapers=r==='cellular'?cellularIds:r==='mouse'?mouseRegions.flatMap(region=>region.papers):region(r)?.papers;
  const ids=Object.keys(papers).filter(id=>(!librarySaved||savedPapers.has(id))&&(r==='all'||topicPapers?.includes(id))&&(!query||`${papers[id].title} ${papers[id].authors} ${papers[id].summary} ${regions.filter(r=>r.papers.includes(id)).map(r=>r.name).join(' ')}`.toLowerCase().includes(query)));
  $('#library-papers').innerHTML=ids.length?`<p class="section-title">${ids.length} ${ids.length===1?'PAPER':'PAPERS'} ${librarySaved?'SAVED':'TO EXPLORE'}</p>`+ids.map(paperCard).join(''):`<div class="empty-state">${icon('book')}<h3>${librarySaved&&!query?'Your curiosity, collected.':'No matching papers'}</h3><p>${librarySaved&&!query?'Save papers with the bookmark icon to build your reading list.':'Try another topic or choose a different region.'}</p>${librarySaved?'<button class="primary-button" id="browse-papers">Explore the research library</button>':''}</div>`;
 }
 
-function showAbout(){showModal('A map for your curiosity.','About the model, the science, and this atlas.',`<div class="about-content"><p>Cortex combines ${broadRegions.length} brain regions and nuclei, ${anatomy.length} anatomical landmarks, ${functional.length} functional teaching locations, and ${pathways.length} common pathways. Select a region, explore its functions, and use the research links to go deeper.</p><h3>A real cortical surface</h3><p>The cerebral hemispheres use the <a href="https://nilearn.github.io/stable/modules/description/fsaverage5.html" target="_blank" rel="noopener noreferrer">fsaverage5 surface distributed with Nilearn</a>, with 10,242 vertices per hemisphere. Cortical labels come from the Destrieux atlas, grouped into broader educational regions.${cite('destrieux')}</p><p>Lobe groupings simplify shared sulci and transition zones. The insula and cingulate are included as separate cortical regions; the medial wall is neutral. These are anatomical groupings, not precise maps of functional boundaries.${cite('destrieux','glasser')}</p><h3>Deep structures are schematic</h3><p>The hippocampus, amygdala, thalamus, basal ganglia, hypothalamus, cerebellum, brainstem, and locus coeruleus are simplified shapes with approximate placement and relative scale. They are not MRI segmentations. The “Deep structures” view makes the cortex transparent and separates the hemispheres to reveal their relationships.</p><h3>Anatomy, functional locations, and pathways</h3><p>The Anatomy layer exposes all 74 named non-medial-wall Destrieux parcels per hemisphere, plus two schematic fissures. Functional markers show approximate teaching locations anchored to anatomical parcels. They do not reproduce measured retinotopic or cytoarchitectonic boundaries, and the guide is not an exhaustive list of cortical fields. Modern schemes such as HCP-MMP1 distinguish 180 areas per hemisphere. FFA/VWFA and other markers require individual functional localization for precision.${cite('destrieux','glasser','ffa','wordFmri')}</p><p>Pathway curves summarize selected routes and direction of flow. They are not tractography; crossings, branching, relay nuclei, and peripheral or spinal segments are simplified. A named stream may contain multiple tracts and feedback connections.${cite('languageTracts','auditory')}</p><h3>Follow the evidence</h3><p>The ${Object.keys(papers).length}-paper collection pairs foundational work with studies and reviews that address specific functions and pathways. Each card identifies the study type and explains its relevance. Anatomy and segmentation papers document how labels were defined. Study cards link to PubMed or the publisher, with open full text where available.</p><p>Regional functions are simplified. Brain activity depends on distributed networks, and anatomy varies between individuals.${cite('glasser')} This atlas is not intended for diagnosis or surgical planning.</p><h3>Real MRI sections</h3><p>The Sections & MRI viewer uses matched fsaverage T1 and aseg volumes from the MNE testing-data distribution. The original 1 mm grid and segmentation values are retained, with intensity windowing for display. <a href="https://pubmed.ncbi.nlm.nih.gov/11832223/" target="_blank" rel="noopener noreferrer">Fischl and colleagues describe the FreeSurfer segmentation method</a>. Labels are sampled from the segmentation at the current plane, rather than inferred from the picture. Coronal and axial images use radiological left/right orientation; sagittal images show anterior on the left. Coordinates are FreeSurfer surface RAS, not MNI. The 3D cut uses this MRI plane alongside the cortical surface; schematic hindbrain geometry is context only.${cite('fsaverage','mriMetadata','ras')}</p><p>This is an averaged research template, not a patient study. Displayed segmentations do not guarantee visually resolved boundaries and are not diagnostic. The files are repackaged derivatives. <a href="./assets/mri/ATTRIBUTION.txt" target="_blank">MRI attribution</a> · <a href="./assets/mri/FREESURFER-LICENSE.txt" target="_blank">FreeSurfer data license and terms</a>.</p><h3>Cellular neuroscience</h3><p>The voltage trace uses <a href="https://pubmed.ncbi.nlm.nih.gov/12991237/" target="_blank" rel="noopener noreferrer">Hodgkin and Huxley’s classical squid giant axon model</a> with a brief current stimulus and constant ion gradients. The cortical zoom leads to a schematic neuron and membrane. The pump cycle shows active transport separately from the trace.${cite('pumpReview','pumpMechanism')}</p><p>3D scale bars show distance at the camera’s focus depth. The MRI image bar uses the displayed field of view. The neuron uses a schematic 20 µm cell body as a size reference. In the membrane drawing, the ≈ 5 nm bracket marks the approximate lipid bilayer thickness.${cite('bilayer')}</p><h3>Atlas reference & attribution</h3><p>Destrieux, C., Fischl, B., Dale, A. & Halgren, E. (2010). <a href="https://pubmed.ncbi.nlm.nih.gov/20547229/" target="_blank" rel="noopener noreferrer">Automatic parcellation of human cortical gyri and sulci using standard anatomical nomenclature</a>. NeuroImage, 53(1), 1–15. DOI: 10.1016/j.neuroimage.2010.06.010.</p><p>Surface data: FreeSurfer fsaverage5, distributed by <a href="https://nilearn.github.io/" target="_blank" rel="noopener noreferrer">Nilearn</a>. <a href="./assets/NILEARN-LICENSE.txt" target="_blank">Nilearn license</a>. General cortical anatomy: <a href="https://www.ncbi.nlm.nih.gov/books/NBK537247/" target="_blank" rel="noopener noreferrer">Javed, Reddy & Lui, Neuroanatomy, Cerebral Cortex</a>. Renderer: Three.js (MIT).</p><h3>Make yourself at home</h3><div class="keyboard-grid"><span><kbd>Drag</kbd> Rotate the model</span><span><kbd>Scroll</kbd> Zoom in or out</span><span><kbd>/</kbd> Search brain regions</span><span><kbd>Esc</kbd> Close a dialog or tour</span><span><kbd>+</kbd> Zoom in</span><span><kbd>−</kbd> Zoom out</span></div><p>Your reading list and bookmarked regions are stored in this browser.</p></div>`);}
+function showAbout(){showModal('A map for your curiosity.','About the model, the science, and this atlas.',`<div class="about-content"><p>Cortex includes a human atlas and ${mouseRegions.length} selectable mouse regions. The human atlas combines ${broadRegions.length} brain regions and nuclei, ${anatomy.length} anatomical landmarks, ${functional.length} functional teaching locations, and ${pathways.length} common pathways. Select a region, explore its functions, and use the research links to go deeper.</p><h3>Mouse brain atlas</h3><p>The mouse model uses region surfaces from the Allen Mouse Brain Common Coordinate Framework, version 3, 2017 annotation mesh release. A selection of cortical and deep regions is shown, with a translucent whole-brain and isocortical outline for context. Surfaces are simplified for browser display. One scene unit represents 2.5 mm, and the focus-depth scale updates as you zoom.${cite('mouseCCF')}</p><p>Names and IDs follow the Allen structure ontology. The mouse is an adult reference atlas. Cross-species links open related human structures for comparison. <a href="./assets/mouse/ATTRIBUTION.txt" target="_blank" rel="noopener noreferrer">Mouse model data attribution</a>.</p><h3>A real cortical surface</h3><p>The cerebral hemispheres use the <a href="https://nilearn.github.io/stable/modules/description/fsaverage5.html" target="_blank" rel="noopener noreferrer">fsaverage5 surface distributed with Nilearn</a>, with 10,242 vertices per hemisphere. Cortical labels come from the Destrieux atlas, grouped into broader educational regions.${cite('destrieux')}</p><p>Lobe groupings simplify shared sulci and transition zones. The insula and cingulate are included as separate cortical regions; the medial wall is neutral. These are anatomical groupings, not precise maps of functional boundaries.${cite('destrieux','glasser')}</p><h3>Deep structures are schematic</h3><p>The hippocampus, amygdala, thalamus, basal ganglia, hypothalamus, cerebellum, brainstem, and locus coeruleus are simplified shapes with approximate placement and relative scale. They are not MRI segmentations. The “Deep structures” view makes the cortex transparent and separates the hemispheres to reveal their relationships.</p><h3>Anatomy, functional locations, and pathways</h3><p>The Anatomy layer exposes all 74 named non-medial-wall Destrieux parcels per hemisphere, plus two schematic fissures. Functional markers show approximate teaching locations anchored to anatomical parcels. They do not reproduce measured retinotopic or cytoarchitectonic boundaries, and the guide is not an exhaustive list of cortical fields. Modern schemes such as HCP-MMP1 distinguish 180 areas per hemisphere. FFA/VWFA and other markers require individual functional localization for precision.${cite('destrieux','glasser','ffa','wordFmri')}</p><p>Pathway curves summarize selected routes and direction of flow. They are not tractography; crossings, branching, relay nuclei, and peripheral or spinal segments are simplified. A named stream may contain multiple tracts and feedback connections.${cite('languageTracts','auditory')}</p><h3>Follow the evidence</h3><p>The ${Object.keys(papers).length}-paper collection pairs foundational work with studies and reviews that address specific functions and pathways. Each card identifies the study type and explains its relevance. Anatomy and segmentation papers document how labels were defined. Study cards link to PubMed or the publisher, with open full text where available.</p><p>Regional functions are simplified. Brain activity depends on distributed networks, and anatomy varies between individuals.${cite('glasser')} This atlas is not intended for diagnosis or surgical planning.</p><h3>Real MRI sections</h3><p>The Sections & MRI viewer uses matched fsaverage T1 and aseg volumes from the MNE testing-data distribution. The original 1 mm grid and segmentation values are retained, with intensity windowing for display. <a href="https://pubmed.ncbi.nlm.nih.gov/11832223/" target="_blank" rel="noopener noreferrer">Fischl and colleagues describe the FreeSurfer segmentation method</a>. Labels are sampled from the segmentation at the current plane, rather than inferred from the picture. Coronal and axial images use radiological left/right orientation; sagittal images show anterior on the left. Coordinates are FreeSurfer surface RAS, not MNI. The 3D cut uses this MRI plane alongside the cortical surface; schematic hindbrain geometry is context only.${cite('fsaverage','mriMetadata','ras')}</p><p>This is an averaged research template, not a patient study. Displayed segmentations do not guarantee visually resolved boundaries and are not diagnostic. The files are repackaged derivatives. <a href="./assets/mri/ATTRIBUTION.txt" target="_blank">MRI attribution</a> · <a href="./assets/mri/FREESURFER-LICENSE.txt" target="_blank">FreeSurfer data license and terms</a>.</p><h3>Cellular neuroscience</h3><p>The voltage trace uses <a href="https://pubmed.ncbi.nlm.nih.gov/12991237/" target="_blank" rel="noopener noreferrer">Hodgkin and Huxley’s classical squid giant axon model</a> with a brief current stimulus and constant ion gradients. The cortical zoom leads to a schematic neuron and membrane. The pump cycle shows active transport separately from the trace.${cite('pumpReview','pumpMechanism')}</p><p>3D scale bars show distance at the camera’s focus depth. The MRI image bar uses the displayed field of view. The neuron uses a schematic 20 µm cell body as a size reference. In the membrane drawing, the ≈ 5 nm bracket marks the approximate lipid bilayer thickness.${cite('bilayer')}</p><h3>Atlas reference & attribution</h3><p>Destrieux, C., Fischl, B., Dale, A. & Halgren, E. (2010). <a href="https://pubmed.ncbi.nlm.nih.gov/20547229/" target="_blank" rel="noopener noreferrer">Automatic parcellation of human cortical gyri and sulci using standard anatomical nomenclature</a>. NeuroImage, 53(1), 1–15. DOI: 10.1016/j.neuroimage.2010.06.010.</p><p>Surface data: FreeSurfer fsaverage5, distributed by <a href="https://nilearn.github.io/" target="_blank" rel="noopener noreferrer">Nilearn</a>. <a href="./assets/NILEARN-LICENSE.txt" target="_blank">Nilearn license</a>. General cortical anatomy: <a href="https://www.ncbi.nlm.nih.gov/books/NBK537247/" target="_blank" rel="noopener noreferrer">Javed, Reddy & Lui, Neuroanatomy, Cerebral Cortex</a>. Renderer: Three.js (MIT).</p><h3>Make yourself at home</h3><div class="keyboard-grid"><span><kbd>Drag</kbd> Rotate the model</span><span><kbd>Scroll</kbd> Zoom in or out</span><span><kbd>/</kbd> Search brain regions</span><span><kbd>Esc</kbd> Close a dialog or tour</span><span><kbd>+</kbd> Zoom in</span><span><kbd>−</kbd> Zoom out</span></div><p>Your reading list and bookmarked regions are stored in this browser.</p></div>`);}
 
 // The anatomical surface is kept separate from the illustrative internal models.
 const stage=$('#brain-stage');let renderer,scene,camera,controls,brain;
+let mouseBrain=null,mouseLoad=null;
 const brainStageLabel=stage.getAttribute('aria-label');
 const sceneScaleBar=$('#scene-scale-bar'),zoomFrame=$('#cell-zoom-frame');
 let neuronScene=null;
@@ -267,7 +293,14 @@ function updateMaterials(){
  const deepRegionView=layer==='regions'&&view==='deep';
  const focusLC=deepRegionView&&selected==='locus-coeruleus';
  const showLCProjection=layer==='pathways'&&selected==='path-locus-coeruleus';
+ if(mouseBrain)mouseBrain.group.visible=layer==='mouse';
  for(const m of meshes){
+  if(m.userData.layer==='mouse'){
+   if(layer==='mouse')styleMouseMesh(m,selected,view,hemisphere,filter);
+   else m.visible=false;
+   continue;
+  }
+  if(layer==='mouse'){m.visible=false;continue;}
   if(layer==='slices'){const id=m.userData.region;const isContext=(m.userData.layer||'regions')==='regions'&&(!m.userData.schematic||['cerebellum','brainstem'].includes(id));m.visible=isContext;if(isContext){m.material.color.set('#bdc8b0');m.material.emissive.set('#000000');m.material.opacity=m.userData.schematic?.3:.85;m.material.transparent=true;m.material.depthWrite=false;m.material.clippingPlanes=[sliceClippingPlane];m.renderOrder=1;}continue;}
   m.material.clippingPlanes=null;
   const id=m.userData.region,r=region(id),ml=m.userData.layer||'regions';
@@ -344,7 +377,7 @@ function addRouteGeometry(r,points,kind,routeColor){
  }
  const tracer=new THREE.Mesh(new THREE.SphereGeometry(.057,16,12),material(r.id));tracer.material.color.set(routeColor||r.color);tracer.material.emissive.set(routeColor||r.color);tracer.material.emissiveIntensity=.65;tracer.visible=false;brain.add(tracer);routeAnimations.push({tracer,curve,id:r.id,bidirectional:r.bidirectional});
 }
-function setHemisphere(next){hemisphere=next;$('#hemisphere').value=next;for(const g of hemisphereGroups)g.visible=next==='both'||(g.userData.side<0?'left':'right')===next;updateMaterials();}
+function setHemisphere(next){hemisphere=next;$('#hemisphere').value=next;for(const g of [...hemisphereGroups,...(mouseBrain?.hemispheres||[])])g.visible=next==='both'||(g.userData.side<0?'left':'right')===next;updateMaterials();}
 function setCameraPreset(next){
  $('#camera-preset').value=next;
  if(next==='medial'&&hemisphere==='both')setHemisphere('left');
@@ -386,6 +419,7 @@ async function initBrain(){
   }
   for(const r of anatomy.filter(r=>r.curve))addRouteGeometry(r,r.curve,'anatomy');
   addSchematicStructures();createLabels();updateMaterials();
+  if(layer==='mouse')ensureMouseBrain();
   if(layer==='slices')applySliceState(sliceViewer.state);
   if(layer==='cellular')applyCellularScale(cellularViewer.scale,cellularViewer.root.dataset.zooming==='true');
   $('#loading').classList.add('hidden');
@@ -401,7 +435,8 @@ let lastFrame=0;
 function animate(now){
  const delta=Math.min((now-lastFrame)/1000,.05);lastFrame=now;
  if(cameraMotion){const {from,to,start,targetFrom,targetTo,duration}=cameraMotion;const t=Math.min((now-start)/duration,1),e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;camera.position.lerpVectors(from,to,e);controls.target.lerpVectors(targetFrom,targetTo,e);if(t===1)cameraMotion=null;}
- const spread=hemisphere==='both'&&(separated||view==='deep')&&!['pathways','slices','cellular'].includes(layer)?.65:0;for(const g of hemisphereGroups)g.position.x=THREE.MathUtils.damp(g.position.x,g.userData.side*spread,7,delta);
+ const spread=hemisphere==='both'&&(separated||view==='deep')&&!['pathways','slices','cellular','mouse'].includes(layer)?.65:0;for(const g of hemisphereGroups)g.position.x=THREE.MathUtils.damp(g.position.x,g.userData.side*spread,7,delta);
+ if(mouseBrain){const mouseSpread=separated&&hemisphere==='both'?.35:0;for(const group of mouseBrain.hemispheres)group.position.x=THREE.MathUtils.damp(group.position.x,group.userData.side*mouseSpread,7,delta);}
  for(const route of routeAnimations){route.tracer.visible=layer==='pathways'&&selected===route.id;if(route.tracer.visible){const progress=reducedMotion?.55:((now-traceStart)%6500)/6500;const t=route.bidirectional?(progress<.5?progress*2:2-progress*2):progress;route.tracer.position.copy(route.curve.getPoint(t));}}
  if(cellularZoom)advanceCellularZoom(now);
  else controls.update();
@@ -411,7 +446,7 @@ function updateSceneScale(){
  const height=stage.clientHeight;
  if(!height)return;
  const neuron=layer==='cellular'&&cellularViewer.scale==='neuron';
- const mmPerUnit=neuron?NEURON_MM_PER_UNIT:SCENE_MM_PER_UNIT;
+ const mmPerUnit=neuron?NEURON_MM_PER_UNIT:layer==='mouse'?MOUSE_MM_PER_UNIT:SCENE_MM_PER_UNIT;
  const depth=camera.position.distanceTo(controls.target);
  const mmPerPixel=2*depth*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*mmPerUnit/height;
  renderScaleBar(sceneScaleBar,mmPerPixel,Math.min(108,stage.clientWidth/4),neuron);
@@ -423,9 +458,10 @@ function updateLabels(){
  const screenLabels=[];
  for(const item of labels){
   const {el,region:r}=item;
-  const visible=labelsOn&&(layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
+  const visible=labelsOn&&(layer==='mouse'?(r.id===selected||r.group===region(selected)?.group&&!r.parent&&currentItems().filter(x=>x.group===r.group&&!x.parent).slice(0,4).some(x=>x.id===r.id)):layer==='regions'?(deep?visibleDeep.includes(r.id)||r.id===selected:visibleSurface.includes(r.id)):(r.id===selected||(layer==='functional'&&r.group===region(selected)?.group&&currentItems().filter(x=>x.group===r.group).slice(0,4).some(x=>x.id===r.id))));
   el.style.display=visible?'flex':'none';if(!visible)continue;
-  const side=hemisphere==='right'?'right':'left';const position=r.positions?.[side]||r.position;if(!position){el.style.display='none';continue;}const point=new THREE.Vector3(...position);if((r.group==='cortex'||r.layer==='anatomy'||r.layer==='functional')&&hemisphere==='both'&&(separated||deep))point.x+=side==='left'?-.65:.65;
+  const side=hemisphere==='right'?'right':'left';const position=r.positions?.[side]||r.position;if(!position){el.style.display='none';continue;}const point=new THREE.Vector3(...position);if(r.layer==='mouse'&&hemisphere==='both'&&separated)point.x+=side==='left'?-.35:.35;
+  else if(r.layer!=='mouse'&&(r.group==='cortex'||r.layer==='anatomy'||r.layer==='functional')&&hemisphere==='both'&&(separated||deep))point.x+=side==='left'?-.65:.65;
   point.project(camera);
   const x=(point.x*.5+.5)*w,y=(-point.y*.5+.5)*h;
   let ox=0,oy=r.id==='locus-coeruleus'?-32:-23;
@@ -443,6 +479,42 @@ function intersection(event){if(!camera||layer==='slices'||layer==='cellular')re
 function onPick(e){if(Math.hypot(e.clientX-dragStart[0],e.clientY-dragStart[1])>5)return;const id=intersection(e);if(id)selectRegion(id);}
 function onHover(e){if(e.buttons||layer==='slices')return;const id=intersection(e),tip=$('#hover-tooltip');renderer.domElement.style.cursor=id?'pointer':'grab';if(!id){tip.style.display='none';return;}const rect=stage.getBoundingClientRect();tip.textContent=region(id).name;tip.style.left=Math.min(e.clientX-rect.left+15,stage.clientWidth-125)+'px';tip.style.top=e.clientY-rect.top-30+'px';tip.style.display='block';}
 function moveCamera(pos,target=defaultTarget,duration=850){if(!camera)return;cameraMotion={from:camera.position.clone(),to:pos.clone(),targetFrom:controls.target.clone(),targetTo:target.clone(),start:performance.now(),duration:reducedMotion?1:duration};}
+async function ensureMouseBrain(){
+ if(mouseBrain||mouseLoad||!scene)return mouseLoad;
+ const loading=$('#mouse-loading');
+ loading.innerHTML='<span class="loading-ring"></span><p>Loading the Allen mouse atlas…</p>';
+ loading.classList.toggle('hidden',layer!=='mouse');
+ mouseLoad=(async()=>{
+  const response=await fetch('./assets/mouse/brain.json.gz');
+  if(!response.ok)throw Error('Mouse surface data unavailable');
+  const data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
+  mouseBrain=buildMouseBrain(THREE,data);
+  scene.add(mouseBrain.group);
+  meshes.push(...mouseBrain.meshes);
+  loading.classList.add('hidden');
+  setHemisphere(hemisphere);
+  if(layer==='mouse'){
+   createLabels();
+   focusMouseRegion(region(selected));
+  }
+ })().catch(error=>{
+  console.error(error);
+  mouseLoad=null;
+  loading.innerHTML='<p>The mouse model could not load.</p><button class="primary-button" id="retry-mouse">Try again</button>';
+ });
+ return mouseLoad;
+}
+function focusMouseRegion(r){
+ if(!camera)return;
+ const side=hemisphere==='right'?'right':'left';
+ const position=r.positions?.[side]||r.position||[0,0,0];
+ const target=new THREE.Vector3(...position);
+ // Retain enough context to locate small structures within the mouse brain.
+ const distance=r.code==='LC'?4.5:r.parent?5:7.8;
+ const offset=new THREE.Vector3(side==='left'?-1:1,.55,.9).normalize().multiplyScalar(distance);
+ moveCamera(target.clone().add(offset),target,550);
+ $('#orientation-caption').textContent=r.code==='LC'?'Dorsal pons · mouse':'Mouse · '+(r.view==='deep'?'internal view':'focused view');
+}
 function focusRegion(id){if(!camera)return;const r=region(id);controls.autoRotate=false;$('#rotate-btn').classList.remove('active');$('#rotate-btn').setAttribute('aria-pressed','false');
  if(id==='locus-coeruleus'){
   moveCamera(new THREE.Vector3(-2.8,-1.1,-2.6),new THREE.Vector3(0,-.87,-.29));
@@ -453,25 +525,33 @@ function focusRegion(id){if(!camera)return;const r=region(id);controls.autoRotat
  const target=r.group==='deep'?new THREE.Vector3(0,-.25,0):defaultTarget;
  moveCamera(new THREE.Vector3(...positions[id]),target);$('#orientation-caption').textContent=r.group==='deep'?'Internal view':'Focused view';
 }
-function setView(next,focus=true){view=next;$$('[data-view]').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);el.setAttribute('aria-pressed',el.dataset.view===view);});$('#model-caption').textContent=layer==='anatomy'?'Destrieux anatomical parcels':layer==='functional'?'Approximate functional markers':layer==='pathways'?'Schematic pathway routes':view==='deep'?'Schematic internal structures':'fsaverage5 cortical surface';$('#separate-btn').classList.toggle('active',separated||view==='deep');$('#separate-btn').setAttribute('aria-pressed',separated||view==='deep');updateMaterials();if(focus&&camera)moveCamera(defaultCamera);}
+function setView(next,focus=true){view=next;$$('[data-view]').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);el.setAttribute('aria-pressed',el.dataset.view===view);});$('#model-caption').textContent=layer==='mouse'?'Allen Mouse CCFv3 · 2017 surfaces':layer==='anatomy'?'Destrieux anatomical parcels':layer==='functional'?'Approximate functional markers':layer==='pathways'?'Schematic pathway routes':view==='deep'?'Schematic internal structures':'fsaverage5 cortical surface';$('#separate-btn').classList.toggle('active',separated||view==='deep');$('#separate-btn').setAttribute('aria-pressed',separated||view==='deep');updateMaterials();if(focus&&camera)moveCamera(defaultCamera);}
 function zoom(factor){if(!camera||cellularZoom)return;cameraMotion=null;const offset=camera.position.clone().sub(controls.target);offset.setLength(THREE.MathUtils.clamp(offset.length()*factor,controls.minDistance,controls.maxDistance));camera.position.copy(controls.target).add(offset);controls.update();}
 function resetView(){setHemisphere('both');$('#camera-preset').value='lateral';separated=false;setView('surface',false);controls&&(controls.autoRotate=false);$('#rotate-btn').classList.remove('active');$('#rotate-btn').setAttribute('aria-pressed','false');selected='frontal';detailTab='overview';renderRegions();renderDetail();updateMaterials();moveCamera(defaultCamera);$('#orientation-caption').textContent='Left anterior view';}
 
-const tour=[
+const humanTour=[
  ['frontal','Start with an intention.','The frontal lobe helps turn goals into action. Drag the model to look around, or click a colored region to follow your curiosity.',['miller']],
  ['parietal','Find your place in the world.','Parietal networks combine sensory and spatial information. The region panel explains what each area contributes in everyday life.',['touch','attention']],
  ['hippocampus','Look a little deeper.','The transparent cortex reveals internal structures. The curved hippocampi help organize memories and spatial relationships. Internal shapes are schematic.',['memory','taxi']],
  ['cerebellum','Discover the quiet coordinator.','The cerebellum fine-tunes skilled movement and contributes to cognitive and emotional networks. No region works alone.',['cerebellarAdaptation','cerebellum']],
  ['frontal','Follow the science.','Open the Research tab for selected papers. Read on PubMed or save a paper to your reading list to return to it later.'],
 ];
-function renderTour(){if(tourStep<0){$('#tour-card').classList.add('hidden');return;}const [id,title,text,refs=[]]=tour[tourStep];selectRegion(id);if(tourStep===4){detailTab='research';renderDetail();}$('#tour-card').classList.remove('hidden');$('#tour-card').innerHTML=`<div class="tour-top"><span>A LITTLE GUIDED DISCOVERY · ${tourStep+1} / ${tour.length}</span><button id="end-tour" aria-label="End guided tour">×</button></div><h3>${title}</h3><p>${text}${cite(...refs)}</p><div class="tour-actions"><div class="tour-dots">${tour.map((_,i)=>`<i class="${i===tourStep?'active':''}"></i>`).join('')}</div><button id="tour-next">${tourStep===tour.length-1?'Keep exploring':'Next stop'} ${icon('arrow-right')}</button></div>`;}
+const mouseTour=[
+ ['mouse-mop','Find the motor areas.','Mouse motor cortex supports movement and changes with motor learning. Select a region on the model or in the list.',['mouseMotor']],
+ ['mouse-ssp-bfd','Explore whisker touch.','Barrel cortex combines touch with movement signals during whisker-based sensing.',['mouseWhisker']],
+ ['mouse-dg','Look inside the hippocampus.','In mice, reactivating a tagged dentate gyrus ensemble elicited conditioned freezing.',['mouseEngram']],
+ ['mouse-lc','Find the locus coeruleus.','This small pontine nucleus provides norepinephrine. Optogenetic experiments in mice link its activity to transitions from sleep to wakefulness.',['mouseArousal']],
+ ['mouse-cb','Follow the research.','The Research tab links each region to relevant studies and the Allen CCFv3 atlas.'],
+];
+function renderTour(){const tour=layer==='mouse'?mouseTour:humanTour;if(tourStep<0){$('#tour-card').classList.add('hidden');return;}const [id,title,text,refs=[]]=tour[tourStep];selectRegion(id);if(tourStep===4){detailTab='research';renderDetail();}$('#tour-card').classList.remove('hidden');$('#tour-card').innerHTML=`<div class="tour-top"><span>A LITTLE GUIDED DISCOVERY · ${tourStep+1} / ${tour.length}</span><button id="end-tour" aria-label="End guided tour">×</button></div><h3>${title}</h3><p>${text}${cite(...refs)}</p><div class="tour-actions"><div class="tour-dots">${tour.map((_,i)=>`<i class="${i===tourStep?'active':''}"></i>`).join('')}</div><button id="tour-next">${tourStep===tour.length-1?'Keep exploring':'Next stop'} ${icon('arrow-right')}</button></div>`;}
 
 // All lists and model labels use the same selection path, including keyboard activation.
 document.addEventListener('click',async e=>{
  const el=e.target.closest('button');if(!el)return;
+ if(el.dataset.species){setLayer(el.dataset.species==='mouse'?'mouse':'regions');return;}
  if(el.dataset.layer){setLayer(el.dataset.layer);return;}
  if(el.dataset.region){selectRegion(el.dataset.region);if(el.closest('#modal'))$('#modal').close();return;}
- if(el.dataset.filter){filter=el.dataset.filter;$$('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===filter));renderRegions();return;}
+ if(el.dataset.filter){filter=el.dataset.filter;$$('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===filter));renderRegions();if(layer==='mouse')updateMaterials();return;}
  if(el.dataset.tab){detailTab=el.dataset.tab;renderDetail();return;}
  if(el.dataset.view){setView(el.dataset.view);return;}
  if(el.dataset.savePaper){const id=el.dataset.savePaper;savedPapers.has(id)?savedPapers.delete(id):savedPapers.add(id);persist();if($('#modal').open&&$('#library-papers'))renderLibrary();renderDetail();notify(savedPapers.has(id)?'Added to your reading list':'Removed from your reading list');return;}
@@ -486,7 +566,8 @@ document.addEventListener('click',async e=>{
   case 'labels-btn':labelsOn=!labelsOn;el.classList.toggle('active',labelsOn);el.setAttribute('aria-pressed',labelsOn);break;
   case 'separate-btn':separated=!(separated||view==='deep');if(view==='deep')setView('surface',false);el.classList.toggle('active',separated);el.setAttribute('aria-pressed',separated);break;
   case 'rotate-btn':if(controls){controls.autoRotate=!controls.autoRotate;cameraMotion=null;el.classList.toggle('active',controls.autoRotate);el.setAttribute('aria-pressed',controls.autoRotate);}break;
-  case 'reset-btn':configureLayer('regions');resetView();break;
+  case 'reset-btn':if(layer==='mouse'){separated=false;setHemisphere('both');setLayer('mouse');}else{configureLayer('regions');resetView();}break;
+  case 'retry-mouse':ensureMouseBrain();break;
   case 'trace-path':traceStart=performance.now();notify('Tracing the simplified route');break;
   case 'zoom-in':zoom(.85);break;
   case 'zoom-out':zoom(1.17);break;
@@ -494,7 +575,7 @@ document.addEventListener('click',async e=>{
   case 'next-region':{const items=currentItems();selectRegion(items[(items.findIndex(r=>r.id===selected)+1)%items.length].id);break;}
   case 'tour-btn':tourStep=0;renderTour();break;
   case 'random-region':exploreRandomRegion();break;
-  case 'tour-next':tourStep=tourStep===tour.length-1?-1:tourStep+1;renderTour();break;
+  case 'tour-next':tourStep=tourStep===(layer==='mouse'?mouseTour:humanTour).length-1?-1:tourStep+1;renderTour();break;
   case 'end-tour':tourStep=-1;renderTour();break;
  }
 });

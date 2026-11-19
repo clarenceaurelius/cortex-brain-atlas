@@ -1,4 +1,4 @@
-import { locusCoeruleusPositions } from './data.js?v=7';
+import { locusCoeruleusPositions } from './data.js?v=13';
 
 // Anatomical parcels follow Destrieux a2009s. Functional markers and tract
 // curves are explicitly schematic teaching aids, not measured localizers.
@@ -489,13 +489,14 @@ const lcAscending = '#c45d54';
 const lcHindbrain = '#3c8a64';
 const lcMidbrain = [-.24,-.48,-.22];
 const lcForebrain = [-.45,.06,.32];
-// One representative side. The curves show targets from the reference figure.
+// One representative side. The curves summarize projection targets from both reviews.
 const lcBranches = [
  {color:lcAscending,points:[lcOrigin,lcMidbrain,lcForebrain,[-.56,.35,1.28],[-.64,.55,1.62]]},
  {color:lcAscending,points:[lcOrigin,lcMidbrain,lcForebrain,[-.65,.63,.39],[-.78,1.06,.15]]},
  {color:lcAscending,points:[lcOrigin,lcMidbrain,lcForebrain,[-.69,.62,.16],[-.80,1.02,-.36]]},
  {color:lcAscending,points:[lcOrigin,lcMidbrain,[-.26,-.30,-.16],[-.25,-.05,-.15]]},
  {color:lcAscending,points:[lcOrigin,lcMidbrain,[-.15,-.53,-.02],[0,-.48,.12]]},
+ {color:lcAscending,points:[lcOrigin,lcMidbrain,[-.20,-.51,.25],[-.28,-.48,.47]]},
  {color:lcAscending,points:[lcOrigin,[-.27,-.69,-.24],[-.43,-.64,-.29],[-.55,-.65,-.35]]},
  {color:lcAscending,points:[lcOrigin,[-.30,-.67,-.04],[-.48,-.59,.19],[-.58,-.60,.50]]},
  {color:lcHindbrain,points:[lcOrigin,[-.27,-.92,-.58],[-.38,-1.03,-.98],[-.48,-1.26,-1.52]]},
@@ -514,16 +515,21 @@ export const pathways=[
  p('ventral-language','Ventral language pathways','language','#b7a06e','Multiple ventral temporal–frontal routes contribute to linking speech signals with meaning. Depending on the model, these include extreme-capsule pathways and other tracts; the curve does not identify one unique bundle.',['Temporal auditory / language networks','Ventral temporal–frontal association routes','Inferior frontal and semantic networks'],[[-1,-.2,-.4],[-.7,-.4,.1],[-.65,-.15,.75],[-.95,.2,.9]],['languageTracts','speech'],['fn-aassoc','fn-broca','fn-vwfa'],null,{bidirectional:true}),
  p('callosal','Corpus callosum / commissural fibers','commissural','#91a88c','The corpus callosum contains many fiber systems connecting cortical territories across hemispheres. The displayed arch illustrates interhemispheric communication rather than the anatomy of all callosal segments.',['Left cortical territory','Callosal white matter crossing the midline','Right cortical territory'],[[-1,.5,.1],[-.55,.4,.05],[0,.35,.05],[.55,.4,.05],[1,.5,.1]],['callosum'],['anat-longitudinal','frontal'],null,{bidirectional:true}),
  p('locus-coeruleus','Locus coeruleus projections','neuromodulatory',lcAscending,
-  'Norepinephrine from the locus coeruleus reaches widely distributed targets. These representative branches show how a small brainstem nucleus can influence cortical and subcortical activity.',
+  'The locus coeruleus sends norepinephrine to targets throughout the brain and into the spinal cord. The effect depends in part on which circuits receive the signal.',
   ['Locus coeruleus in the dorsal pons is the origin of the branches.',
-   'Ascending projections reach prefrontal, motor and somatosensory cortices, thalamus, hypothalamus, hippocampus and amygdala.',
-   'Other projections reach cerebellum, medulla and spinal cord.'],
-  lcBranches[0].points,['locusCoeruleusParkinson','locusCoeruleusCognition','locusCoeruleusMapping'],
+   'Prefrontal, motor and sensory cortices and the thalamus receive input that can tune attention, movement and sensory processing.',
+   'The basal forebrain and hypothalamus participate in sleep and wakefulness. The amygdala and hippocampus help link emotion and memory to experience.',
+   'The cerebellum and medulla receive LC projections. Descending spinal projections can modulate pain transmission and motor circuit excitability.'],
+  lcBranches[0].points,['locusCoeruleusReview','locusCoeruleusCorticalOutputs','locusCoeruleusParkinson','locusCoeruleusCognition','locusCoeruleusMapping'],
   ['locus-coeruleus','frontal','fn-m1','fn-s1','thalamus','hypothalamus','hippocampus','amygdala','cerebellum','brainstem'],
-  'https://doi.org/10.1016/j.neurop.2026.100220',
+  'https://www.researchgate.net/figure/The-LC-sends-widespread-projections-to-numerous-brain-regions-each-associated-with_fig2_395295259',
   {branches:lcBranches,camera:'lateral',position:lcOrigin,
-   legend:[['Ascending projections',lcAscending],['Cerebellum, medulla & spinal cord',lcHindbrain]],
-   modelNote:'This schematic shows selected targets on one side. The curves summarize the paper’s projection diagram.'}),
+   sourceLabel:'Projection diagram · Caestecker et al., Figure 2',
+   descriptionRefs:['locusCoeruleusReview','locusCoeruleusCorticalOutputs'],
+   stepRefs:[['locusCoeruleusMapping'],['locusCoeruleusReview','locusCoeruleusCorticalOutputs'],['locusCoeruleusReview'],['locusCoeruleusReview','locusCoeruleusParkinson']],
+   legend:[['Ascending projections',lcAscending],['Cerebellum & spinal cord branches',lcHindbrain]],
+   modelRefs:['locusCoeruleusReview','locusCoeruleusParkinson'],
+   modelNote:'The curves depict selected targets from one side. They simplify axon trajectories and do not show the degree of overlap between the neurons that supply different targets.'}),
 
 ];
 

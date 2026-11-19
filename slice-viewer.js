@@ -1,4 +1,4 @@
-import { sliceEvidence } from './references.js?v=11';
+import { sliceEvidence } from './references.js?v=13';
 import {renderScaleBar} from './scale-bar.js';
 import {slicePlanes,sliceStructures,structureByLabel,MRI_SIZE,MRI_FIELD_MM,voxelIndex,imageToRAS} from './slice-data.js?v=6';
 const $=s=>document.querySelector(s);

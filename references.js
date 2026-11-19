@@ -56,7 +56,7 @@ export const regionEvidence = {
   cingulate: {overview:['cingulate','posteriorCingulate'], functions:[['cingulate'],['cingulate'],['posteriorCingulate']], example:['cingulate']},
   cerebellum: {overview:['centralAnatomy','cerebellarAdaptation','cerebellum'], functions:[['centralAnatomy','cerebellarAdaptation'],['cerebellarAdaptation'],['cerebellum']], example:['cerebellarAdaptation']},
   brainstem: {overview:['centralAnatomy','breathing','bloodPressure','sleep'], functions:[['breathing','bloodPressure'],['sleep'],['centralAnatomy']], example:['sleep']},
-  'locus-coeruleus': {overview:['locusCoeruleusMapping','locusCoeruleusCognition','locusCoeruleusAdaptiveGain'], functions:[['locusCoeruleusAdaptiveGain'],['locusCoeruleusAdaptiveGain','locusCoeruleusCognition'],['locusCoeruleusCognition']], example:['locusCoeruleusCognition'], location:['locusCoeruleusMapping']},
+  'locus-coeruleus': {overview:['locusCoeruleusMapping','locusCoeruleusReview','locusCoeruleusCognition'], functions:[['locusCoeruleusReview'],['locusCoeruleusAdaptiveGain','locusCoeruleusCognition'],['locusCoeruleusCognition']], example:['locusCoeruleusCognition'], location:['locusCoeruleusMapping']},
   hippocampus: {overview:['internalAnatomy','memory','taxi'], functions:[['memory','ca1Lesion'],['taxi'],['memory']], example:['taxi']},
   amygdala: {overview:['internalAnatomy','amygdalaCircuits','amygdalaMemory'], functions:[['amygdalaCircuits'],['emotion','amygdalaCircuits'],['amygdalaMemory']], example:['emotion']},
   thalamus: {overview:['thalamus','pulvinar'], functions:[['thalamus'],['thalamus'],['pulvinar','sleep']], example:['thalamus','retinotopy']},

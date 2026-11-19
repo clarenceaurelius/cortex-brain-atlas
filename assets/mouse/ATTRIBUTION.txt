@@ -1,0 +1,30 @@
+Allen Mouse Brain Common Coordinate Framework (CCFv3)
+Copyright Allen Institute for Brain Science. Used for noncommercial education.
+
+Source surfaces
+2017 annotation structure meshes from the Allen Mouse Brain Connectivity Atlas.
+https://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/structure_meshes/
+
+Structure ontology
+https://api.brain-map.org/api/v2/structure_graph_download/1.json
+
+Reference
+Wang, Q. et al. (2020). The Allen Mouse Brain Common Coordinate Framework:
+A 3D Reference Atlas. Cell 181(4), 936–953.e20.
+https://doi.org/10.1016/j.cell.2020.04.007
+
+Access and terms
+https://alleninstitute.org/legal/terms-of-use
+https://alleninstitute.org/legal/citation-policy
+
+Browser derivatives
+The original surfaces are simplified by grouping nearby vertices. Triangle
+winding is reversed to retain outward orientation after the display transform.
+Original coordinates are in micrometres (AP, DV, ML). Display coordinates are
+x=(ML-5700)*0.0004, y=(4000-DV)*0.0004, z=(6600-AP)*0.0004.
+Thus one display unit represents 2.5 mm. Negative x is the displayed left side.
+Each surface is partitioned at the atlas midline for the hemisphere controls.
+These are atlas annotation surfaces for an adult mouse reference brain.
+
+Regenerate with scripts/prepare-mouse.py. Structure IDs included in brain.json.gz
+are listed in that script. The atlas shell and isocortex provide visual context.
